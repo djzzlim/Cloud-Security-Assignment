@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Home - University Expertise Directory{% endblock %}
+
+{% block content %}
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="mb-4 text-center">Search Expertise</h2>
+        
+        <!-- Search & Filter -->
+        <form method="GET" class="row g-3 mb-4 justify-content-center">
+            <div class="col-md-6">
+                <input type="text" name="q" class="form-control" placeholder="Search by keyword...">
+            </div>
+            <div class="col-md-4">
+                <select name="faculty" class="form-select">
+                    <option value="">All Faculties</option>
+                    <option value="FOE">Faculty of Engineering (FOE)</option>
+                    <option value="FCI">Faculty of Computing & Informatics (FCI)</option>
+                    <option value="FCM">Faculty of Creative Multimedia (FCM)</option>
+                    <option value="FOB">Faculty of Business (FOB)</option>
+                    <option value="FOL">Faculty of Law (FOL)</option>
+                    <!-- Add more faculties as needed -->
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+        </form>
+
+        <!-- Results Grid -->
+        <div class="row">
+            {% for expert in experts %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ expert.name }}</h5>
+                        <p class="card-text"><strong>{{ expert.title }}</strong></p>
+                        <p class="text-muted">{{ expert.faculty }}</p>
+                        <p>{{ expert.research_area }}</p>
+                        <a href="{{ url_for('view_profile', id=expert.id) }}" class="btn btn-outline-primary btn-sm">View Profile</a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12 text-center">
+                <p class="text-muted">No matching experts found.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}
