@@ -1,55 +1,332 @@
 {% extends "base.html" %}
 
-{% block title %}Home - University Expertise Directory{% endblock %}
+{% block title %}Home - {{ app_name }}{% endblock %}
 
 {% block content %}
+<style>
+    body {
+        background-color: #fafafa;
+        color: #333;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
 
-<section class="py-5">
-    <div class="container">
-        <h2 class="mb-4 text-center">Search Expertise</h2>
+    .search-section {
+        background: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid #e5e5e5;
+    }
+
+    .search-form {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .form-control {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: border-color 0.2s ease;
+    }
+
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .btn-search {
+        background: #007bff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-search:hover {
+        background: #0056b3;
+    }
+
+    .expert-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+        padding: 0 1rem;
+    }
+
+    .expert-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid #f0f0f0;
+    }
+
+    .expert-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    }
+
+    .expert-photo {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin: 0 auto 1rem;
+        display: block;
+    }
+
+    .expert-initials {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #6c757d;
+        margin: 0 auto 1rem;
+    }
+
+    .expert-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: #1a1a1a;
+        text-align: center;
+    }
+
+    .expert-title {
+        color: #007bff;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .expert-position {
+        color: #6c757d;
+        font-size: 0.85rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .expert-faculty {
+        background: #f8f9fa;
+        color: #495057;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: inline-block;
+        margin: 0 auto 1rem;
+        text-align: center;
+        width: fit-content;
+    }
+
+    .expert-bio {
+        color: #6c757d;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    .btn-profile {
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        transition: background-color 0.2s ease;
+        margin: 0 auto;
+        display: block;
+        text-align: center;
+        width: fit-content;
+    }
+
+    .btn-profile:hover {
+        background: #0056b3;
+        color: white;
+        text-decoration: none;
+    }
+
+    .contact-info {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+
+    .contact-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .contact-item i {
+        width: 16px;
+        margin-right: 0.5rem;
+        color: #007bff;
+    }
+
+    .contact-item a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .contact-item a:hover {
+        text-decoration: underline;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+
+    .no-results h3 {
+        color: #495057;
+        margin-bottom: 1rem;
+    }
+
+    .results-count {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    @media (max-width: 768px) {
+        .expert-grid {
+            grid-template-columns: 1fr;
+            padding: 0 0.5rem;
+        }
         
-        <!-- Search & Filter -->
-        <form method="GET" class="row g-3 mb-4 justify-content-center">
-            <div class="col-md-6">
-                <input type="text" name="q" class="form-control" placeholder="Search by keyword...">
-            </div>
-            <div class="col-md-4">
-                <select name="faculty" class="form-select">
-                    <option value="">All Faculties</option>
-                    <option value="FOE">Faculty of Engineering (FOE)</option>
-                    <option value="FCI">Faculty of Computing & Informatics (FCI)</option>
-                    <option value="FCM">Faculty of Creative Multimedia (FCM)</option>
-                    <option value="FOB">Faculty of Business (FOB)</option>
-                    <option value="FOL">Faculty of Law (FOL)</option>
-                    <!-- Add more faculties as needed -->
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Search</button>
-            </div>
-        </form>
+        .search-section {
+            padding: 1rem 0;
+        }
+    }
+</style>
 
-        <!-- Results Grid -->
-        <div class="row">
-            {% for expert in experts %}
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ expert.name }}</h5>
-                        <p class="card-text"><strong>{{ expert.title }}</strong></p>
-                        <p class="text-muted">{{ expert.faculty }}</p>
-                        <p>{{ expert.research_area }}</p>
-                        <a href="{{ url_for('view_profile', id=expert.id) }}" class="btn btn-outline-primary btn-sm">View Profile</a>
+<!-- Search Section -->
+<div class="search-section">
+    <div class="container">
+        <div class="search-form">
+            <form method="GET" action="{{ url_for('routes.index') }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <input type="text" 
+                               class="form-control" 
+                               name="search" 
+                               placeholder="Search experts..." 
+                               value="{{ current_search or '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-control" name="faculty">
+                            <option value="all" {% if current_faculty == 'all' or not current_faculty %}selected{% endif %}>All Faculties</option>
+                            {% for faculty in faculties %}
+                            <option value="{{ faculty.faculty_name }}" 
+                                    {% if current_faculty == faculty.faculty_name %}selected{% endif %}>
+                                {{ faculty.faculty_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-search w-100">Search</button>
                     </div>
                 </div>
-            </div>
-            {% else %}
-            <div class="col-12 text-center">
-                <p class="text-muted">No matching experts found.</p>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div class="container-fluid">
+    {% if experts %}
+        <div class="results-count">
+            Found {{ experts|length }} expert{{ 's' if experts|length != 1 else '' }}
+        </div>
+        
+        <div class="expert-grid">
+            {% for expert in experts %}
+            <div class="expert-card">
+                {% if expert.photo_url %}
+                    <img src="{{ expert.photo_url }}" 
+                         alt="{{ expert.name }}" 
+                         class="expert-photo">
+                {% else %}
+                    <div class="expert-initials">
+                        {{ expert.name[0] if expert.name else 'N' }}
+                    </div>
+                {% endif %}
+                
+                <div class="expert-name">{{ expert.name }}</div>
+                
+                {% if expert.title %}
+                <div class="expert-title">{{ expert.title }}</div>
+                {% endif %}
+                
+                {% if expert.position %}
+                <div class="expert-position">{{ expert.position }}</div>
+                {% endif %}
+                
+                <div class="expert-faculty">{{ expert.faculty }}</div>
+                
+                {% if expert.biography %}
+                <div class="expert-bio">
+                    {{ expert.biography[:100] }}{% if expert.biography|length > 100 %}...{% endif %}
+                </div>
+                {% endif %}
+                
+                <a href="{{ url_for('routes.expert_profile', expert_id=expert.id) }}" 
+                   class="btn-profile">View Profile</a>
+                
+                {% if expert.email or expert.phone or expert.office_location %}
+                <div class="contact-info">
+                    {% if expert.email %}
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <a href="mailto:{{ expert.email }}">{{ expert.email }}</a>
+                    </div>
+                    {% endif %}
+                    {% if expert.phone %}
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        {{ expert.phone }}
+                    </div>
+                    {% endif %}
+                    {% if expert.office_location %}
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ expert.office_location }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
-    </div>
-</section>
-
+    {% else %}
+        <div class="no-results">
+            <h3>No experts found</h3>
+            <p>Try adjusting your search criteria or browse all experts.</p>
+            <a href="{{ url_for('routes.index') }}" class="btn btn-search">View All Experts</a>
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

@@ -35,11 +35,11 @@ def login():
 
             # Redirect to the dashboard based on the role
             if current_user.role_id == 1:
-                return redirect(url_for('admin.dashboard'))
+                return redirect(url_for('admin.admin_dashboard'))
             elif current_user.role_id == 2:
                 return redirect(url_for('lecturer.dashboard'))
             else:
-                return redirect(url_for('routes.home'))
+                return redirect(url_for('routes.index'))
         else:
             flash('Invalid password. Please try again.', 'danger')
 
@@ -51,7 +51,7 @@ def login():
 def logout():
     logout_user()  # Log out the current user
     # Redirect to home page or login page
-    return redirect(url_for('routes.home'))
+    return redirect(url_for('routes.index'))
 
 def generate_reset_token(email):
     """Generate a secure token for password reset."""
