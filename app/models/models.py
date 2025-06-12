@@ -19,7 +19,7 @@ class User(UserMixin, db.Model):
     __tablename__ = 'User'
     id = Column('UserID', NVARCHAR(50), primary_key=True, default=generate_uuid)
     full_name = Column('FullName', NVARCHAR(200), nullable=False)
-    password_hash = Column('PasswordHash', NVARCHAR(255))
+    password = Column('PasswordHash', NVARCHAR(255))
     email = Column('Email', NVARCHAR(200), nullable=False, unique=True)
     role_id = Column('RoleID', Integer, ForeignKey('Role.RoleID', ondelete='SET NULL'))
 

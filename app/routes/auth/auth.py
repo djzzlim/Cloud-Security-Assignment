@@ -26,17 +26,13 @@ def login():
         # Query the database for the user by email
         user = User.query.filter_by(email=email).first()
 
-        if user.role_id == '5':
-            flash('Students are not allowed to log in.', 'danger')
-            return render_template('auth/login.html')
-
         if password == user.password:  # Check if passwords match
             login_user(user)  # Log in the user
 
             # Redirect to the dashboard based on the role
-            if current_user.role_id == '1':  # Admin
+            if current_user.role_id == '1':
                 return redirect(url_for('admin.dashboard'))
-            elif current_user.role_id == '2':  # Teacher
+            elif current_user.role_id == '2':
                 return redirect(url_for('lecturer.dashboard'))
             else:
                 return redirect(url_for('routes.home'))
@@ -74,12 +70,6 @@ def forgot_password():
         if not user:
             flash('Email address not found. Please check and try again.', 'danger')
             return render_template('auth/forgot_password.html')
-
-        # Ensure user role is not 5
-        if user.role_id == '5':  # Check that the role is not 4 (Accountant or other non-reset roles)
-            flash('This account is not eligible for password reset.', 'danger')
-            return render_template('auth/forgot_password.html')
-
 
         # from app.utilities.email import send_email
 
