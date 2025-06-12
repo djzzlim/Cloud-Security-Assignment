@@ -16,7 +16,7 @@ def create_app():
 
     app.config['UPLOAD_FOLDER'] = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static')
 
-    # db.init_app(app)
+    db.init_app(app)
 
     from .routes.routes import routes
     from .routes.auth import auth
@@ -28,8 +28,8 @@ def create_app():
     app.register_blueprint(admin, url_prefix='/admin')
     app.register_blueprint(lecturer, url_prefix='/lecturer')
 
-    # with app.app_context():
-    #     db.create_all()
+    with app.app_context():
+        db.create_all()
 
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)

@@ -26,25 +26,22 @@ def login():
         # Query the database for the user by email
         user = User.query.filter_by(email=email).first()
 
-        if user:  # Check if user exists
-            if user.role_id == '5':
-                flash('Students are not allowed to log in.', 'danger')
-                return render_template('auth/login.html')
+        if user.role_id == '5':
+            flash('Students are not allowed to log in.', 'danger')
+            return render_template('auth/login.html')
 
-            if password == user.password:  # Check if passwords match
-                login_user(user)  # Log in the user
+        if password == user.password:  # Check if passwords match
+            login_user(user)  # Log in the user
 
-                # Redirect to the dashboard based on the role
-                if current_user.role_id == '1':  # Admin
-                    return redirect(url_for('admin.dashboard'))
-                elif current_user.role_id == '2':  # Teacher
-                    return redirect(url_for('lecturer.dashboard'))
-                else:
-                    return redirect(url_for('routes.home'))
+            # Redirect to the dashboard based on the role
+            if current_user.role_id == '1':  # Admin
+                return redirect(url_for('admin.dashboard'))
+            elif current_user.role_id == '2':  # Teacher
+                return redirect(url_for('lecturer.dashboard'))
             else:
-                flash('Invalid password. Please try again.', 'danger')
+                return redirect(url_for('routes.home'))
         else:
-            flash('User not found with this email. Please check again.', 'danger')
+            flash('Invalid password. Please try again.', 'danger')
 
     return render_template('auth/login.html')
 
