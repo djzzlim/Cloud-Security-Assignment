@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Profile - University Directory</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --bg-subtle: #f9fafb;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem 0;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: white !important;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 0;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.25rem;
+            color: var(--text-primary) !important;
+            text-decoration: none;
+        }
+
+        .navbar-brand:hover {
+            color: var(--primary-color) !important;
+        }
+
+        .btn-minimal {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .btn-minimal:hover {
+            background: var(--primary-hover);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Form Styling */
+        .form-section {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .form-section h5 {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.1);
+        }
+
+        .form-control:focus {
+            background-color: #fefefe;
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* Button Styles */
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-secondary {
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-outline-secondary:hover {
+            background: var(--bg-subtle);
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 8px;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            border-color: var(--danger-color);
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-radius: 6px;
+        }
+
+        /* Profile Photo Upload */
+        .profile-photo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-photo-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-subtle);
+        }
+
+        .profile-photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-placeholder {
+            color: var(--text-secondary);
+            font-size: 2rem;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .file-input-label:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Publication Entry */
+        .publication-entry {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .publication-entry h6 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Page Header */
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-header p {
+            opacity: 0.9;
+            margin-bottom: 0;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: var(--bg-subtle);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 0.75rem 0;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+
+        /* Save Bar */
+        .save-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid var(--border-color);
+            padding: 1rem 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .save-bar.show {
+            display: block;
+        }
+
+        .save-bar.hide {
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .profile-photo-section {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+
+            main {
+                padding: 1rem 0;
+            }
+        }
+
+        /* Flash Messages */
+        .alert {
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand" href="{{ url_for('routes.index') }}">
+                University Directory
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{{ url_for('lecturer.view_profile') }}" class="btn-minimal">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                </a>
+                <a href="{{ url_for('auth.logout') }}" class="btn-minimal">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-user-edit me-2"></i>Edit Profile</h1>
+            <p>Update your professional information and research expertise</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <div class="container">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form id="profileForm" action="{{ url_for('lecturer.update_profile') }}" method="POST" enctype="multipart/form-data">
+                
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h5><i class="fas fa-user me-2"></i>Basic Information</h5>
+                    
+                    <!-- Profile Photo -->
+                    <div class="profile-photo-section">
+                        <div class="profile-photo-preview" id="photoPreview">
+                            {% if user_data.photo_url %}
+                                <img src="{{ url_for('static', filename=user_data.photo_url) }}" alt="Profile Photo">
+                            {% else %}
+                                <i class="fas fa-user photo-placeholder"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div class="file-input-wrapper">
+                                <input type="file" id="profilePhoto" name="profile_photo" accept="image/*">
+                                <label for="profilePhoto" class="file-input-label">
+                                    <i class="fas fa-camera me-2"></i>Upload Photo
+                                </label>
+                            </div>
+                            <p class="text-muted small mt-2">Recommended: 300x300px, max 2MB</p>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fullName" class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" id="fullName" name="full_name" 
+                                   value="{{ user_data.full_name if user_data else '' }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ user_data.title if user_data else '' }}" placeholder="e.g., Dr., Prof.">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="position" class="form-label">Position</label>
+                            <input type="text" class="form-control" id="position" name="position" 
+                                   value="{{ user_data.position if user_data else '' }}" placeholder="e.g., Senior Lecturer">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="faculty" class="form-label">Faculty</label>
+                            <select class="form-select" id="faculty" name="faculty_id">
+                                <option value="">Select Faculty</option>
+                                <option value="1" {{ 'selected' if user_data and user_data.faculty_id == '1' else '' }}>Faculty of Engineering (FOE)</option>
+                                <option value="2" {{ 'selected' if user_data and user_data.faculty_id == '2' else '' }}>Faculty of Computing & Informatics (FCI)</option>
+                                <option value="3" {{ 'selected' if user_data and user_data.faculty_id == '3' else '' }}>Faculty of Creative Multimedia (FCM)</option>
+                                <option value="4" {{ 'selected' if user_data and user_data.faculty_id == '4' else '' }}>Faculty of Business (FOB)</option>
+                                <option value="5" {{ 'selected' if user_data and user_data.faculty_id == '5' else '' }}>Faculty of Law (FOL)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="form-section">
+                    <h5><i class="fas fa-envelope me-2"></i>Contact Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ user_data.email if user_data else '' }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   value="{{ user_data.phone if user_data else '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="officeLocation" class="form-label">Office Location</label>
+                            <input type="text" class="form-control" id="officeLocation" name="office_location" 
+                                   value="{{ user_data.office_location if user_data else '' }}" placeholder="e.g., Block A, Room 302">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Professional Information -->
+                <div class="form-section">
+                    <h5><i class="fas fa-briefcase me-2"></i>Professional Information</h5>
+                    <div class="mb-3">
+                        <label for="biography" class="form-label">Biography</label>
+                        <textarea class="form-control" id="biography" name="biography" rows="4" 
+                                  placeholder="Brief professional biography and research interests...">{{ user_data.biography if user_data else '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="educationBackground" class="form-label">Education Background</label>
+                        <textarea class="form-control" id="educationBackground" name="education_background" rows="3" 
+                                  placeholder="Educational qualifications and degrees...">{{ user_data.education_background if user_data else '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="workingExperience" class="form-label">Working Experience</label>
+                        <textarea class="form-control" id="workingExperience" name="working_experience" rows="3" 
+                                  placeholder="Professional experience and career highlights...">{{ user_data.working_experience if user_data else '' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Publications -->
+                <div class="form-section">
+                    <h5><i class="fas fa-book me-2"></i>Publications</h5>
+                    <div id="publications">
+                        {% if user_data and user_data.publications %}
+                            {% for pub in user_data.publications %}
+                                <div class="publication-entry">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6>Publication Details</h6>
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="removePublication(this)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12 mb-2">
+                                            <input type="text" class="form-control" name="pub_titles[]" placeholder="Publication Title" value="{{ pub.title }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control" name="pub_years[]" placeholder="Year" value="{{ pub.year }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control" name="pub_venues[]" placeholder="Venue/Journal" value="{{ pub.venue }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-outline-primary" onclick="addPublication()">
+                        <i class="fas fa-plus me-2"></i>Add Publication
+                    </button>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex gap-3 mb-5">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                        <i class="fas fa-undo me-2"></i>Reset
+                    </button>
+                    <a href="{{ url_for('lecturer.view_profile') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div>&copy; 2025 University Directory. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <!-- Save Bar (appears when form is modified) -->
+    <div class="save-bar hide" id="saveBar">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-exclamation-triangle text-warning me-2"></i>You have unsaved changes</span>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-success btn-sm" onclick="saveForm()">
+                        <i class="fas fa-save me-2"></i>Save
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="hideSaveBar()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load sample data
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFormData();
+            setupFormChangeDetection();
+            setupPhotoUpload();
+        });
+
+        function loadFormData() {
+            // Populate form fields
+            document.getElementById('fullName').value = sampleData.fullName || '';
+            document.getElementById('title').value = sampleData.title || '';
+            document.getElementById('position').value = sampleData.position || '';
+            document.getElementById('faculty').value = sampleData.facultyId || '';
+            document.getElementById('email').value = sampleData.email || '';
+            document.getElementById('phone').value = sampleData.phone || '';
+            document.getElementById('officeLocation').value = sampleData.officeLocation || '';
+            document.getElementById('officeHours').value = sampleData.officeHours || '';
+            document.getElementById('biography').value = sampleData.biography || '';
+            document.getElementById('educationBackground').value = sampleData.educationBackground || '';
+            document.getElementById('workingExperience').value = sampleData.workingExperience || '';
+
+            // Load research areas
+            const researchAreasContainer = document.getElementById('researchAreas');
+            sampleData.researchAreas.forEach(area => {
+                addResearchAreaElement(area);
+            });
+
+            // Load publications
+            const publicationsContainer = document.getElementById('publications');
+            sampleData.publications.forEach(pub => {
+                addPublicationElement(pub);
+            });
+        }
+
+        function addResearchArea() {
+            const input = document.getElementById('newResearchArea');
+            const area = input.value.trim();
+            if (area) {
+                addResearchAreaElement(area);
+                input.value = '';
+                showSaveBar();
+            }
+        }
+
+        function addResearchAreaElement(area) {
+            const container = document.getElementById('researchAreas');
+            const div = document.createElement('div');
+            div.className = 'research-area-item';
+            div.innerHTML = `
+                <span><i class="fas fa-tag me-2 text-primary"></i>${area}</span>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeResearchArea(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+                <input type="hidden" name="research_areas[]" value="${area}">
+            `;
+            container.appendChild(div);
+        }
+
+        function removeResearchArea(button) {
+            button.parentElement.remove();
+            showSaveBar();
+        }
+
+        function addPublication() {
+            addPublicationElement({ title: '', year: '', venue: '' });
+            showSaveBar();
+        }
+
+        function addPublicationElement(pub) {
+            const container = document.getElementById('publications');
+            const div = document.createElement('div');
+            div.className = 'publication-entry';
+            div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6>Publication Details</h6>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removePublication(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="row">
+                    <div class="col-12 mb-2">
+                        <input type="text" class="form-control" name="pub_titles[]" placeholder="Publication Title" value="${pub.title}">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" name="pub_years[]" placeholder="Year" value="${pub.year}">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" name="pub_venues[]" placeholder="Venue/Journal" value="${pub.venue}">
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function removePublication(button) {
+            button.closest('.publication-entry').remove();
+            showSaveBar();
+        }
+
+        function setupFormChangeDetection() {
+            const form = document.getElementById('profileForm');
+            const inputs = form.querySelectorAll('input, textarea, select');
+            
+            inputs.forEach(input => {
+                input.addEventListener('change', showSaveBar);
+                input.addEventListener('input', showSaveBar);
+            });
+        }
+
+        function setupPhotoUpload() {
+            const photoInput = document.getElementById('profilePhoto');
+            const preview = document.getElementById('photoPreview');
+            
+            photoInput.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `<img src="${e.target.result}" alt="Profile Photo">`;
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                    showSaveBar();
+                }
+            });
+        }
+
+        function showSaveBar() {
+            const saveBar = document.getElementById('saveBar');
+            saveBar.classList.remove('hide');
+            saveBar.classList.add('show');
+        }
+
+        function hideSaveBar() {
+            const saveBar = document.getElementById('saveBar');
+            saveBar.classList.remove('show');
+            saveBar.classList.add('hide');
+        }
+
+        function saveForm() {
+            document.getElementById('profileForm').submit();
+        }
+
+        function resetForm() {
+            if (confirm('Are you sure you want to reset all changes?')) {
+                location.reload();
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            submitBtn.disabled = true;
+            
+            // Simulate save process
+            setTimeout(() => {
+                alert('Profile updated successfully!');
+                hideSaveBar();
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                // window.location.href = '/profile'; // Redirect to profile page
+            }, 2000);
+        });
+
+        // Handle Enter key in research area input
+        document.getElementById('newResearchArea').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addResearchArea();
+            }
+        });
+    </script>
+</body>
+
+</html>

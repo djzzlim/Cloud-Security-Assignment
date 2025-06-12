@@ -62,6 +62,7 @@ class Publication(db.Model):
     id = Column('PublicationID', Integer, primary_key=True, autoincrement=True)
     title = Column('Title', NVARCHAR(300), nullable=False)
     year = Column('Year', NVARCHAR(4), nullable=False)
+    venue = Column('Venue', NVARCHAR(300), nullable=False)
     publication_relations = relationship('ExpertPublicationRelation', back_populates='publication')
 
 class ExpertPublicationRelation(db.Model):
