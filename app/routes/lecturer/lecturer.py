@@ -7,15 +7,35 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash
 from app import db
 from app.models.models import User, Expert, Faculty, Publication, ExpertPublicationRelation, ActivityLog
+from config import *
 
 lecturer = Blueprint('lecturer', __name__, url_prefix='/lecturer')
 
 # Configure upload settings
 UPLOAD_FOLDER = 'static/uploads/profiles'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+MAX_FILE_SIZE = 2 * 1024 * 1024
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def validate_image_file(file):
+    """Validate uploaded image file"""
+    if not file or file.filename == '':
+        return False, "No file selected"
+    
+    if not allowed_file(file.filename):
+        return False, "Invalid file type. Please upload PNG, JPG, JPEG, or GIF files only."
+    
+    # Check file size (Flask doesn't automatically limit this)
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)  # Reset file pointer
+    
+    if file_size > MAX_FILE_SIZE:
+        return False, "File size too large. Maximum size is 2MB."
+    
+    return True, "Valid file"
 
 def clean_text_formatting(text):
     """Clean and format text for consistent display"""
@@ -63,7 +83,7 @@ def parse_bullet_points(text):
 @login_required
 def dashboard():
     """Lecturer dashboard - redirect to edit profile for now"""
-    return redirect(url_for('lecturer.edit_profile'))
+    return redirect(url_for('lecturer.view_profile'))
 
 @lecturer.route('/edit-profile')
 @login_required
@@ -133,19 +153,18 @@ def update_profile():
         if not expert:
             expert = Expert(user_id=current_user.id)
             db.session.add(expert)
+            db.session.flush()  # Get the ID immediately
         
-        # Update basic information with cleaned formatting
+        # Update basic information
         expert.full_name = request.form.get('full_name', '').strip()
         expert.title = request.form.get('title', '').strip()
         expert.position = request.form.get('position', '').strip()
         expert.email = request.form.get('email', '').strip()
         expert.phone = request.form.get('phone', '').strip()
         expert.office_location = request.form.get('office_location', '').strip()
-        
-        # Clean text formatting for multi-line fields
-        expert.biography = clean_text_formatting(request.form.get('biography', ''))
-        expert.education_background = clean_text_formatting(request.form.get('education_background', ''))
-        expert.working_experience = clean_text_formatting(request.form.get('working_experience', ''))
+        expert.biography = request.form.get('biography', '').strip()
+        expert.education_background = request.form.get('education_background', '').strip()
+        expert.working_experience = request.form.get('working_experience', '').strip()
         
         # Update faculty
         faculty_id = request.form.get('faculty_id')
@@ -154,28 +173,81 @@ def update_profile():
         else:
             expert.faculty_id = None
         
-        # Handle file upload
+        # Handle file upload - FIXED VERSION
         if 'profile_photo' in request.files:
             file = request.files['profile_photo']
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                # Generate unique filename
-                unique_filename = f"{uuid.uuid4()}_{filename}"
-                file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+            print(f"File received: {file.filename}")  # Debug print
+            print(f"File size: {file.content_length if hasattr(file, 'content_length') else 'unknown'}")
+            
+            # Check if a file was actually selected
+            if file and file.filename and file.filename != '':
+                # Validate file
+                is_valid, message = validate_image_file(file)
+                print(f"File validation: {is_valid}, {message}")
                 
-                # Create directory if it doesn't exist
-                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                
-                file.save(file_path)
-                expert.photo_url = f"uploads/profiles/{unique_filename}"
+                if is_valid:
+                    try:
+                        # Create unique filename
+                        filename = secure_filename(file.filename)
+                        file_extension = filename.rsplit('.', 1)[1].lower()
+                        unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+                        
+                        # Ensure upload directory exists
+                        full_upload_path = os.path.abspath(UPLOAD_FOLDER)
+                        os.makedirs(full_upload_path, exist_ok=True)
+                        print(f"Upload directory: {full_upload_path}")
+                        
+                        # Create full file path
+                        file_path = os.path.join(full_upload_path, unique_filename)
+                        print(f"Full file path: {file_path}")
+                        
+                        # Reset file pointer to beginning
+                        file.seek(0)
+                        
+                        # Save file
+                        file.save(file_path)
+                        print(f"File saved to: {file_path}")
+                        
+                        # Verify file was saved and get actual size
+                        if os.path.exists(file_path):
+                            file_size = os.path.getsize(file_path)
+                            print(f"File saved successfully. Size: {file_size} bytes")
+                            
+                            # Update database with relative path (for web access)
+                            relative_path = f"uploads/profiles/{unique_filename}"
+                            expert.photo_url = relative_path
+                            print(f"Database photo_url set to: {expert.photo_url}")
+                            
+                            # Force database flush to ensure the change is registered
+                            db.session.flush()
+                            print(f"After flush, expert.photo_url = {expert.photo_url}")
+                            
+                            flash("Profile photo uploaded successfully!", "success")
+                        else:
+                            print("ERROR: File was not saved properly")
+                            flash("Error: Failed to save profile photo", "error")
+                            
+                    except Exception as file_error:
+                        print(f"File upload error: {str(file_error)}")
+                        import traceback
+                        traceback.print_exc()
+                        flash(f"Error uploading photo: {str(file_error)}", "error")
+                else:
+                    print(f"File validation failed: {message}")
+                    flash(message, "error")
+            else:
+                print("No file selected or empty filename")
+        else:
+            print("No 'profile_photo' key in request.files")
         
-        # Handle publications
+        # Handle publications (existing code)
         pub_titles = request.form.getlist('pub_titles[]')
         pub_years = request.form.getlist('pub_years[]')
         pub_venues = request.form.getlist('pub_venues[]')
         
         # Remove existing publication relations
-        ExpertPublicationRelation.query.filter_by(expert_id=expert.id).delete()
+        if expert.id:
+            ExpertPublicationRelation.query.filter_by(expert_id=expert.id).delete()
         
         # Add new publications
         for i, title in enumerate(pub_titles):
@@ -184,7 +256,7 @@ def update_profile():
                 venue = pub_venues[i] if i < len(pub_venues) else ''
                 
                 # Check if publication already exists
-                publication = Publication.query.filter_by(title=title.strip(), year=year).first()
+                publication = Publication.query.filter_by(title=title.strip()).first()
                 if not publication:
                     publication = Publication(
                         title=title.strip(),
@@ -192,30 +264,40 @@ def update_profile():
                         venue=venue.strip()
                     )
                     db.session.add(publication)
-                    db.session.flush()  # Get the ID
+                    db.session.flush()
                 
                 # Create relation
                 relation = ExpertPublicationRelation(
                     expert_id=expert.id,
                     publication_id=publication.id
                 )
-
-                print(f"Checking publication: '{title}' ({year}) -> Existing: {publication is not None}")
                 db.session.add(relation)
-               
-        # Save changes
-        db.session.commit()
         
-        # Log activity
-        log_activity(f"Updated profile for {expert.full_name}")
-        
-        flash('Profile updated successfully!', 'success')
-        return jsonify({'status': 'success', 'message': 'Profile updated successfully!'})
+        # Final commit with error handling
+        try:
+            db.session.commit()
+            print("Database commit successful")
+            
+            # Verify the photo_url was actually saved
+            updated_expert = Expert.query.filter_by(user_id=current_user.id).first()
+            print(f"After commit, photo_url in database: {updated_expert.photo_url}")
+            
+            flash('Profile updated successfully!', 'success')
+            return redirect(url_for('lecturer.view_profile'))
+            
+        except Exception as commit_error:
+            db.session.rollback()
+            print(f"Database commit error: {str(commit_error)}")
+            flash(f'Error saving to database: {str(commit_error)}', 'error')
+            return redirect(url_for('lecturer.edit_profile'))
         
     except Exception as e:
         db.session.rollback()
+        print(f"General error in update_profile: {str(e)}")
+        import traceback
+        traceback.print_exc()
         flash(f'Error updating profile: {str(e)}', 'error')
-        return jsonify({'status': 'error', 'message': f'Error updating profile: {str(e)}'}), 500
+        return redirect(url_for('lecturer.edit_profile'))
 
 @lecturer.route('/profile')
 @login_required
@@ -243,7 +325,7 @@ def view_profile():
         education_points = parse_bullet_points(expert.education_background) if expert.education_background else []
         experience_points = parse_bullet_points(expert.working_experience) if expert.working_experience else []
         
-        return render_template('lecturer/profile.html', 
+        return render_template('lecturer/view-profile.html', 
                              expert=expert, 
                              faculty=faculty, 
                              publications=publications,
@@ -306,32 +388,47 @@ def upload_photo():
             return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
         
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            unique_filename = f"{uuid.uuid4()}_{filename}"
-            file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-            
-            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-            file.save(file_path)
-            
-            # Update expert photo URL in database
-            expert = Expert.query.filter_by(user_id=current_user.id).first()
-            if expert:
-                expert.photo_url = f"uploads/profiles/{unique_filename}"
-                db.session.commit()
-                
-                log_activity("Updated profile photo")
-            
-            photo_url = f"/static/uploads/profiles/{unique_filename}"
-            return jsonify({'success': True, 'photo_url': photo_url})
+        # Validate file
+        is_valid, message = validate_image_file(file)
+        if not is_valid:
+            return jsonify({'error': message}), 400
         
-        return jsonify({'error': 'Invalid file type'}), 400
+        # Process file
+        filename = secure_filename(file.filename)
+        file_extension = filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+        
+        # Create directory and save file
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+        file.save(file_path)
+        
+        # Verify file was saved
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'Failed to save file'}), 500
+        
+        # Update expert photo URL in database
+        expert = Expert.query.filter_by(user_id=current_user.id).first()
+        if not expert:
+            expert = Expert(user_id=current_user.id)
+            db.session.add(expert)
+            db.session.flush()
+        
+        expert.photo_url = f"uploads/profiles/{unique_filename}"
+        db.session.commit()
+        
+        # Return success with photo URL
+        photo_url = url_for('static', filename=f"uploads/profiles/{unique_filename}")
+        return jsonify({
+            'success': True, 
+            'photo_url': photo_url,
+            'message': 'Photo uploaded successfully'
+        })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"AJAX upload error: {str(e)}")
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 @lecturer.route('/api/profile-data')
 @login_required

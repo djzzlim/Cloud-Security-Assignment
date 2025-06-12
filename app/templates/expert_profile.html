@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}{{ expert.name }} - {{ app_name }}{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background-color: #fafafa;
+        color: #333;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .profile-header {
+        background: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid #e5e5e5;
+    }
+
+    .profile-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+
+    .profile-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f0f0f0;
+        margin-bottom: 2rem;
+    }
+
+    .profile-basic-info {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 2rem;
+        align-items: start;
+        margin-bottom: 2rem;
+    }
+
+    .profile-photo {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #f8f9fa;
+    }
+
+    .profile-initials {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: 600;
+        color: #6c757d;
+        border: 4px solid #f8f9fa;
+    }
+
+    .profile-details h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-title {
+        color: #007bff;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-position {
+        color: #6c757d;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .profile-faculty {
+        background: #007bff;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
+
+    .contact-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: #495057;
+    }
+
+    .contact-item i {
+        width: 20px;
+        margin-right: 0.75rem;
+        color: #007bff;
+        font-size: 1.1rem;
+    }
+
+    .contact-item a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .contact-item a:hover {
+        text-decoration: underline;
+    }
+
+    .section-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #007bff;
+    }
+
+    .biography-text {
+        color: #495057;
+        line-height: 1.7;
+        font-size: 1rem;
+        text-align: justify;
+    }
+
+    .education-item, .experience-item {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #007bff;
+    }
+
+    .education-item:last-child, .experience-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .publications-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .publication-item {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #28a745;
+    }
+
+    .publication-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .publication-title {
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 0.5rem;
+    }
+
+    .publication-details {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .back-button {
+        background: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: background-color 0.2s ease;
+        margin-bottom: 1rem;
+    }
+
+    .back-button:hover {
+        background: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+
+    .back-button i {
+        margin-right: 0.5rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: #6c757d;
+        font-style: italic;
+        padding: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .profile-basic-info {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+
+        .profile-photo, .profile-initials {
+            justify-self: center;
+        }
+
+        .contact-section {
+            grid-template-columns: 1fr;
+        }
+
+        .profile-card {
+            padding: 1rem;
+        }
+
+        .profile-container {
+            padding: 0 0.5rem;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <!-- Profile Header -->
+    <div class="profile-card">
+        <div class="profile-basic-info">
+            <div>
+                {% if expert.photo_url %}
+                    <img src="{{ expert.photo_url }}" 
+                         alt="{{ expert.name }}" 
+                         class="profile-photo">
+                {% else %}
+                    <div class="profile-initials">
+                        {{ expert.name[0] if expert.name else 'N' }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="profile-details">
+                <h1>{{ expert.name }}</h1>
+                
+                {% if expert.title %}
+                <div class="profile-title">{{ expert.title }}</div>
+                {% endif %}
+                
+                {% if expert.position %}
+                <div class="profile-position">{{ expert.position }}</div>
+                {% endif %}
+                
+                <div class="profile-faculty">{{ expert.faculty }}</div>
+                
+                <!-- Contact Information -->
+                {% if expert.email or expert.phone or expert.office_location %}
+                <div class="contact-section">
+                    {% if expert.email %}
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <a href="mailto:{{ expert.email }}">{{ expert.email }}</a>
+                    </div>
+                    {% endif %}
+                    {% if expert.phone %}
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <span>{{ expert.phone }}</span>
+                    </div>
+                    {% endif %}
+                    {% if expert.office_location %}
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ expert.office_location }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Biography Section -->
+    {% if expert.biography %}
+    <div class="profile-card">
+        <h2 class="section-title">Biography</h2>
+        <div class="biography-text">
+            {{ expert.biography|replace('\n', '<br>')|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Education Background Section -->
+    {% if expert.education_background %}
+    <div class="profile-card">
+        <h2 class="section-title">Education Background</h2>
+        <div class="education-item">
+            {{ expert.education_background|replace('\n', '<br>')|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Working Experience Section -->
+    {% if expert.working_experience %}
+    <div class="profile-card">
+        <h2 class="section-title">Working Experience</h2>
+        <div class="experience-item">
+            {{ expert.working_experience|replace('\n', '<br>')|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Publications Section -->
+    {% if expert.publications %}
+    <div class="profile-card">
+        <h2 class="section-title">Publications</h2>
+        <ul class="publications-list">
+            {% for publication in expert.publications %}
+            <li class="publication-item">
+                <div class="publication-title">{{ publication.title }}</div>
+                <div class="publication-details">
+                    {% if publication.authors %}
+                        <strong>Authors:</strong> {{ publication.authors }}<br>
+                    {% endif %}
+                    {% if publication.journal %}
+                        <strong>Journal:</strong> {{ publication.journal }}<br>
+                    {% endif %}
+                    {% if publication.year %}
+                        <strong>Year:</strong> {{ publication.year }}<br>
+                    {% endif %}
+                    {% if publication.doi %}
+                        <strong>DOI:</strong> <a href="https://doi.org/{{ publication.doi }}" target="_blank">{{ publication.doi }}</a><br>
+                    {% endif %}
+                    {% if publication.url %}
+                        <a href="{{ publication.url }}" target="_blank" class="btn btn-sm btn-outline-primary">View Publication</a>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <div class="profile-card">
+        <h2 class="section-title">Publications</h2>
+        <div class="empty-state">No publications available.</div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

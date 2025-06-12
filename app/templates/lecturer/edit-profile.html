@@ -26,7 +26,8 @@
             box-sizing: border-box;
         }
 
-        html, body {
+        html,
+        body {
             height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
@@ -112,7 +113,8 @@
             margin-bottom: 0.5rem;
         }
 
-        .form-control, .form-select {
+        .form-control,
+        .form-select {
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 0.75rem;
@@ -120,7 +122,8 @@
             transition: all 0.2s ease;
         }
 
-        .form-control:focus, .form-select:focus {
+        .form-control:focus,
+        .form-select:focus {
             border-color: var(--primary-color);
             box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.1);
         }
@@ -358,29 +361,31 @@
         <div class="container">
             <!-- Flash Messages -->
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+                role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
             {% endwith %}
 
-            <form id="profileForm" action="{{ url_for('lecturer.update_profile') }}" method="POST" enctype="multipart/form-data">
-                
+            <form id="profileForm" action="{{ url_for('lecturer.update_profile') }}" method="POST"
+                enctype="multipart/form-data">
+
                 <!-- Basic Information -->
                 <div class="form-section">
                     <h5><i class="fas fa-user me-2"></i>Basic Information</h5>
-                    
+
                     <!-- Profile Photo -->
                     <div class="profile-photo-section">
                         <div class="profile-photo-preview" id="photoPreview">
                             {% if user_data.photo_url %}
-                                <img src="{{ url_for('static', filename=user_data.photo_url) }}" alt="Profile Photo">
+                            <img src="{{ url_for('static', filename=user_data.photo_url) }}" alt="Profile Photo">
                             {% else %}
-                                <i class="fas fa-user photo-placeholder"></i>
+                            <i class="fas fa-user photo-placeholder"></i>
                             {% endif %}
                         </div>
                         <div>
@@ -397,28 +402,34 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="fullName" class="form-label">Full Name *</label>
-                            <input type="text" class="form-control" id="fullName" name="full_name" 
-                                   value="{{ user_data.full_name if user_data else '' }}" required>
+                            <input type="text" class="form-control" id="fullName" name="full_name"
+                                value="{{ user_data.full_name if user_data else '' }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="title" class="form-label">Title</label>
-                            <input type="text" class="form-control" id="title" name="title" 
-                                   value="{{ user_data.title if user_data else '' }}" placeholder="e.g., Dr., Prof.">
+                            <input type="text" class="form-control" id="title" name="title"
+                                value="{{ user_data.title if user_data else '' }}" placeholder="e.g., Dr., Prof.">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="position" class="form-label">Position</label>
-                            <input type="text" class="form-control" id="position" name="position" 
-                                   value="{{ user_data.position if user_data else '' }}" placeholder="e.g., Senior Lecturer">
+                            <input type="text" class="form-control" id="position" name="position"
+                                value="{{ user_data.position if user_data else '' }}"
+                                placeholder="e.g., Senior Lecturer">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="faculty" class="form-label">Faculty</label>
                             <select class="form-select" id="faculty" name="faculty_id">
                                 <option value="">Select Faculty</option>
-                                <option value="1" {{ 'selected' if user_data and user_data.faculty_id == '1' else '' }}>Faculty of Engineering (FOE)</option>
-                                <option value="2" {{ 'selected' if user_data and user_data.faculty_id == '2' else '' }}>Faculty of Computing & Informatics (FCI)</option>
-                                <option value="3" {{ 'selected' if user_data and user_data.faculty_id == '3' else '' }}>Faculty of Creative Multimedia (FCM)</option>
-                                <option value="4" {{ 'selected' if user_data and user_data.faculty_id == '4' else '' }}>Faculty of Business (FOB)</option>
-                                <option value="5" {{ 'selected' if user_data and user_data.faculty_id == '5' else '' }}>Faculty of Law (FOL)</option>
+                                <option value="1" {{ 'selected' if user_data and user_data.faculty_id=='1' else '' }}>
+                                    Faculty of Engineering (FOE)</option>
+                                <option value="2" {{ 'selected' if user_data and user_data.faculty_id=='2' else '' }}>
+                                    Faculty of Computing & Informatics (FCI)</option>
+                                <option value="3" {{ 'selected' if user_data and user_data.faculty_id=='3' else '' }}>
+                                    Faculty of Creative Multimedia (FCM)</option>
+                                <option value="4" {{ 'selected' if user_data and user_data.faculty_id=='4' else '' }}>
+                                    Faculty of Business (FOB)</option>
+                                <option value="5" {{ 'selected' if user_data and user_data.faculty_id=='5' else '' }}>
+                                    Faculty of Law (FOL)</option>
                             </select>
                         </div>
                     </div>
@@ -430,18 +441,19 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="email" class="form-label">Email *</label>
-                            <input type="email" class="form-control" id="email" name="email" 
-                                   value="{{ user_data.email if user_data else '' }}" required>
+                            <input type="email" class="form-control" id="email" name="email"
+                                value="{{ user_data.email if user_data else '' }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="phone" class="form-label">Phone</label>
-                            <input type="tel" class="form-control" id="phone" name="phone" 
-                                   value="{{ user_data.phone if user_data else '' }}">
+                            <input type="tel" class="form-control" id="phone" name="phone"
+                                value="{{ user_data.phone if user_data else '' }}">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="officeLocation" class="form-label">Office Location</label>
-                            <input type="text" class="form-control" id="officeLocation" name="office_location" 
-                                   value="{{ user_data.office_location if user_data else '' }}" placeholder="e.g., Block A, Room 302">
+                            <input type="text" class="form-control" id="officeLocation" name="office_location"
+                                value="{{ user_data.office_location if user_data else '' }}"
+                                placeholder="e.g., Block A, Room 302">
                         </div>
                     </div>
                 </div>
@@ -451,18 +463,18 @@
                     <h5><i class="fas fa-briefcase me-2"></i>Professional Information</h5>
                     <div class="mb-3">
                         <label for="biography" class="form-label">Biography</label>
-                        <textarea class="form-control" id="biography" name="biography" rows="4" 
-                                  placeholder="Brief professional biography and research interests...">{{ user_data.biography if user_data else '' }}</textarea>
+                        <textarea class="form-control" id="biography" name="biography" rows="4"
+                            placeholder="Brief professional biography and research interests...">{{ user_data.biography if user_data else '' }}</textarea>
                     </div>
                     <div class="mb-3">
                         <label for="educationBackground" class="form-label">Education Background</label>
-                        <textarea class="form-control" id="educationBackground" name="education_background" rows="3" 
-                                  placeholder="Educational qualifications and degrees...">{{ user_data.education_background if user_data else '' }}</textarea>
+                        <textarea class="form-control" id="educationBackground" name="education_background" rows="3"
+                            placeholder="Educational qualifications and degrees...">{{ user_data.education_background if user_data else '' }}</textarea>
                     </div>
                     <div class="mb-3">
                         <label for="workingExperience" class="form-label">Working Experience</label>
-                        <textarea class="form-control" id="workingExperience" name="working_experience" rows="3" 
-                                  placeholder="Professional experience and career highlights...">{{ user_data.working_experience if user_data else '' }}</textarea>
+                        <textarea class="form-control" id="workingExperience" name="working_experience" rows="3"
+                            placeholder="Professional experience and career highlights...">{{ user_data.working_experience if user_data else '' }}</textarea>
                     </div>
                 </div>
 
@@ -471,27 +483,30 @@
                     <h5><i class="fas fa-book me-2"></i>Publications</h5>
                     <div id="publications">
                         {% if user_data and user_data.publications %}
-                            {% for pub in user_data.publications %}
-                                <div class="publication-entry">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6>Publication Details</h6>
-                                        <button type="button" class="btn btn-danger btn-sm" onclick="removePublication(this)">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-12 mb-2">
-                                            <input type="text" class="form-control" name="pub_titles[]" placeholder="Publication Title" value="{{ pub.title }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <input type="text" class="form-control" name="pub_years[]" placeholder="Year" value="{{ pub.year }}">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <input type="text" class="form-control" name="pub_venues[]" placeholder="Venue/Journal" value="{{ pub.venue }}">
-                                        </div>
-                                    </div>
+                        {% for pub in user_data.publications %}
+                        <div class="publication-entry">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6>Publication Details</h6>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="removePublication(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 mb-2">
+                                    <input type="text" class="form-control" name="pub_titles[]"
+                                        placeholder="Publication Title" value="{{ pub.title }}">
                                 </div>
-                            {% endfor %}
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" name="pub_years[]" placeholder="Year"
+                                        value="{{ pub.year }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" name="pub_venues[]"
+                                        placeholder="Venue/Journal" value="{{ pub.venue }}">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                         {% endif %}
                     </div>
                     <button type="button" class="btn btn-outline-primary" onclick="addPublication()">
@@ -542,7 +557,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
         // Load sample data
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             loadFormData();
             setupFormChangeDetection();
             setupPhotoUpload();
@@ -643,7 +658,7 @@
         function setupFormChangeDetection() {
             const form = document.getElementById('profileForm');
             const inputs = form.querySelectorAll('input, textarea, select');
-            
+
             inputs.forEach(input => {
                 input.addEventListener('change', showSaveBar);
                 input.addEventListener('input', showSaveBar);
@@ -653,16 +668,62 @@
         function setupPhotoUpload() {
             const photoInput = document.getElementById('profilePhoto');
             const preview = document.getElementById('photoPreview');
-            
-            photoInput.addEventListener('change', function(e) {
-                if (e.target.files && e.target.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        preview.innerHTML = `<img src="${e.target.result}" alt="Profile Photo">`;
-                    };
-                    reader.readAsDataURL(e.target.files[0]);
-                    showSaveBar();
+
+            photoInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+
+                console.log('Photo input changed');
+                console.log('Files array:', e.target.files);
+                console.log('Selected file:', file);
+
+                if (!file) {
+                    console.log('No file selected');
+                    return;
                 }
+
+                console.log('File details:');
+                console.log('- Name:', file.name);
+                console.log('- Size:', file.size, 'bytes');
+                console.log('- Type:', file.type);
+                console.log('- Last modified:', new Date(file.lastModified));
+
+                // Validate file size (2MB = 2 * 1024 * 1024 bytes)
+                const maxSize = 2 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    alert(`File too large (${file.size} bytes). Maximum size is ${maxSize} bytes (2MB).`);
+                    photoInput.value = '';
+                    return;
+                }
+
+                // Validate file type
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                const fileType = file.type.toLowerCase();
+                if (!allowedTypes.includes(fileType)) {
+                    alert(`Invalid file type (${fileType}). Please use JPG, PNG, or GIF.`);
+                    photoInput.value = '';
+                    return;
+                }
+
+                console.log('File validation passed');
+
+                // Preview the image
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    console.log('FileReader loaded successfully');
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover;">`;
+                };
+
+                reader.onerror = function (e) {
+                    console.error('FileReader error:', e);
+                    alert('Error reading file.');
+                };
+
+                reader.readAsDataURL(file);
+
+                // Show that changes need to be saved
+                showSaveBar();
+
+                console.log('Photo upload setup complete');
             });
         }
 
@@ -689,27 +750,87 @@
         }
 
         // Handle form submission
-        document.getElementById('profileForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Show loading state
+        document.getElementById('profileForm').addEventListener('submit', function (e) {
+            console.log('Form submission started');
+
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
+
+            // Show loading state
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
             submitBtn.disabled = true;
-            
-            // Simulate save process
+
+            // Log form data for debugging
+            const formData = new FormData(this);
+            console.log('Form data contents:');
+
+            let hasFile = false;
+            for (let [key, value] of formData.entries()) {
+                if (key === 'profile_photo' && value instanceof File) {
+                    hasFile = true;
+                    console.log(`${key}:`, {
+                        name: value.name,
+                        size: value.size,
+                        type: value.type,
+                        lastModified: value.lastModified
+                    });
+                } else {
+                    console.log(`${key}:`, value);
+                }
+            }
+
+            if (!hasFile) {
+                console.log('WARNING: No profile_photo file found in form data');
+            }
+
+            // Log the raw file input
+            const fileInput = document.getElementById('profilePhoto');
+            if (fileInput.files.length > 0) {
+                console.log('Raw file input:', fileInput.files[0]);
+            } else {
+                console.log('No files in file input');
+            }
+
+            // The form will submit normally, but we reset button state in case of errors
             setTimeout(() => {
-                alert('Profile updated successfully!');
-                hideSaveBar();
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
-                // window.location.href = '/profile'; // Redirect to profile page
-            }, 2000);
+            }, 10000); // Increased timeout for debugging
+        });
+
+        // Debug function to check current state
+        function debugCurrentState() {
+            const fileInput = document.getElementById('profilePhoto');
+            const formData = new FormData(document.getElementById('profileForm'));
+
+            console.log('=== DEBUG CURRENT STATE ===');
+            console.log('File input files:', fileInput.files);
+            console.log('File input value:', fileInput.value);
+
+            const profilePhoto = formData.get('profile_photo');
+            console.log('FormData profile_photo:', profilePhoto);
+
+            if (profilePhoto instanceof File) {
+                console.log('File details:', {
+                    name: profilePhoto.name,
+                    size: profilePhoto.size,
+                    type: profilePhoto.type
+                });
+            }
+            console.log('=== END DEBUG ===');
+        }
+
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            setupPhotoUpload();
+
+            // Load any existing data here if needed
+            console.log('Profile edit form loaded successfully');
         });
 
         // Handle Enter key in research area input
-        document.getElementById('newResearchArea').addEventListener('keypress', function(e) {
+        document.getElementById('newResearchArea').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 addResearchArea();
