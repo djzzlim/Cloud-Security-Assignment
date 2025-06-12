@@ -35,6 +35,6 @@ def dashboard():
     if current_user.role_id == '1':  # Admin
         return redirect(url_for('admin.dashboard'))
     elif current_user.role_id == '2':  # Lecturer
-        return redirect(url_for('teacher.dashboard'))
+        return redirect(url_for('lecturer.dashboard'))
     else:
         return redirect(url_for('routes.index'))

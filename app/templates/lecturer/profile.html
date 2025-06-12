@@ -4,337 +4,243 @@
 
 {% block content %}
 <div class="container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-user me-2"></i>My Profile</h2>
+        <a href="{{ url_for('lecturer.edit_profile') }}" class="btn btn-primary">
+            <i class="fas fa-edit me-2"></i>Edit Profile
+        </a>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
     <div class="row">
-        <!-- Profile Navigation -->
-        <div class="col-md-3 mb-4">
-            <div class="card border-0 shadow-sm">
+        <!-- Left Column - Basic Information -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Basic Information</h5>
+                </div>
                 <div class="card-body">
+                    <!-- Profile Photo -->
                     <div class="text-center mb-4">
-                        <div class="profile-avatar mb-3">
-                            {% if current_user.profile_picture %}
-                            <img src="{{ current_user.profile_picture }}" alt="Profile" class="rounded-circle"
-                                width="100" height="100">
-                            {% else %}
-                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center"
-                                style="width: 100px; height: 100px;">
-                                <i class="fas fa-user fa-2x text-white"></i>
+                        {% if expert and expert.photo_url %}
+                            <img src="{{ url_for('static', filename=expert.photo_url) }}" 
+                                 alt="Profile Photo" class="rounded-circle" width="120" height="120"
+                                 style="object-fit: cover; border: 3px solid #e5e7eb;">
+                        {% else %}
+                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto"
+                                 style="width: 120px; height: 120px;">
+                                <i class="fas fa-user fa-3x text-white"></i>
                             </div>
-                            {% endif %}
-                        </div>
-                        <h5 class="mb-1">{{ current_user.first_name }} {{ current_user.last_name }}</h5>
-                        <p class="text-muted small mb-0">{{ current_user.title or 'Faculty Member' }}</p>
-                        <p class="text-muted small">{{ current_user.department or 'Department' }}</p>
+                        {% endif %}
                     </div>
 
-                    <nav class="nav flex-column">
-                        <a class="nav-link active px-0" href="#" data-tab="overview">
-                            <i class="fas fa-user me-2"></i>Overview
-                        </a>
-                        <a class="nav-link px-0" href="#" data-tab="research">
-                            <i class="fas fa-microscope me-2"></i>Research & Expertise
-                        </a>
-                        <a class="nav-link px-0" href="#" data-tab="publications">
-                            <i class="fas fa-book me-2"></i>Publications
-                        </a>
-                        <a class="nav-link px-0" href="#" data-tab="contact">
-                            <i class="fas fa-envelope me-2"></i>Contact Info
-                        </a>
-                        <a class="nav-link px-0" href="#" data-tab="settings">
-                            <i class="fas fa-cog me-2"></i>Settings
-                        </a>
-                    </nav>
+                    <div class="mb-3">
+                        <label class="text-muted small">Full Name</label>
+                        <p class="mb-0">{{ expert.full_name if expert and expert.full_name else 'Not specified' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Title</label>
+                        <p class="mb-0">{{ expert.title if expert and expert.title else 'Not specified' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Position</label>
+                        <p class="mb-0">{{ expert.position if expert and expert.position else 'Not specified' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Faculty</label>
+                        <p class="mb-0">{{ faculty.faculty_name if faculty else 'Not specified' }}</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="col-md-9">
-            <!-- Overview Tab -->
-            <div id="overview-tab" class="tab-content active">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-user me-2 text-primary"></i>
-                            Profile Overview
-                        </h5>
-                        <button class="btn btn-outline-primary btn-sm" onclick="editProfile()">
-                            <i class="fas fa-edit me-2"></i>Edit Profile
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="text-muted small">Full Name</label>
-                                <p class="mb-0">{{ current_user.first_name }} {{ current_user.last_name }}</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="text-muted small">Title</label>
-                                <p class="mb-0">{{ current_user.title or 'Not specified' }}</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="text-muted small">Department</label>
-                                <p class="mb-0">{{ current_user.department or 'Not specified' }}</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="text-muted small">Office Location</label>
-                                <p class="mb-0">{{ current_user.office_location or 'Not specified' }}</p>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="text-muted small">Bio</label>
-                                <p class="mb-0">{{ current_user.bio or 'No bio available. Click edit to add your
-                                    professional background and interests.' }}</p>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Right Column - Everything Else -->
+        <div class="col-md-8">
+            <!-- Contact Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-envelope me-2"></i>Contact Information</h5>
                 </div>
-
-                <!-- Quick Stats -->
-                <div class="row mb-4">
-                    <div class="col-md-4 mb-3">
-                        <div class="card border-0 bg-primary text-white">
-                            <div class="card-body text-center">
-                                <i class="fas fa-book fa-2x mb-2"></i>
-                                <h4 class="mb-0">{{ publications_count or '12' }}</h4>
-                                <small>Publications</small>
-                            </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Email</label>
+                            <p class="mb-0">{{ expert.email if expert and expert.email else current_user.email }}</p>
                         </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card border-0 bg-success text-white">
-                            <div class="card-body text-center">
-                                <i class="fas fa-project-diagram fa-2x mb-2"></i>
-                                <h4 class="mb-0">{{ projects_count or '8' }}</h4>
-                                <small>Active Projects</small>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Phone</label>
+                            <p class="mb-0">{{ expert.phone if expert and expert.phone else 'Not specified' }}</p>
                         </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card border-0 bg-info text-white">
-                            <div class="card-body text-center">
-                                <i class="fas fa-handshake fa-2x mb-2"></i>
-                                <h4 class="mb-0">{{ collaborations_count or '15' }}</h4>
-                                <small>Collaborations</small>
-                            </div>
+                        <div class="col-12 mb-3">
+                            <label class="text-muted small">Office Location</label>
+                            <p class="mb-0">{{ expert.office_location if expert and expert.office_location else 'Not specified' }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Research Tab -->
-            <div id="research-tab" class="tab-content">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-microscope me-2 text-primary"></i>
-                            Research Areas & Expertise
-                        </h5>
-                        <button class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-plus me-2"></i>Add Research Area
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            {% set research_areas = ['Machine Learning', 'Computer Vision', 'Natural Language
-                            Processing', 'Deep Learning', 'AI Ethics'] %}
-                            {% for area in research_areas %}
-                            <div class="col-md-6 mb-3">
-                                <div class="d-flex justify-content-between align-items-center p-2 border rounded">
-                                    <span><i class="fas fa-tag me-2 text-primary"></i>{{ area }}</span>
-                                    <button class="btn btn-outline-danger btn-sm">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
+            <!-- Professional Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Professional Information</h5>
                 </div>
-
-                <!-- Current Projects -->
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-project-diagram me-2 text-success"></i>
-                            Current Projects
-                        </h5>
-                        <button class="btn btn-outline-success btn-sm">
-                            <i class="fas fa-plus me-2"></i>Add Project
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        {% set projects = [
-                        ('AI for Healthcare Diagnostics', 'Developing machine learning models for medical image
-                        analysis', 'In Progress', 'success'),
-                        ('Ethical AI Framework', 'Creating guidelines for responsible AI development', 'Planning',
-                        'warning'),
-                        ('Smart City Infrastructure', 'IoT-based solutions for urban planning', 'Completed', 'info')
-                        ] %}
-
-                        {% for title, description, status, color in projects %}
-                        <div class="border rounded p-3 mb-3">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0">{{ title }}</h6>
-                                <span class="badge bg-{{ color }}">{{ status }}</span>
-                            </div>
-                            <p class="text-muted small mb-0">{{ description }}</p>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small">Biography</label>
+                        <div class="formatted-text">
+                            {% if expert and expert.biography %}
+                                <p>{{ expert.biography }}</p>
+                            {% else %}
+                                <p class="text-muted">No biography provided. Click "Edit Profile" to add your professional background and interests.</p>
+                            {% endif %}
                         </div>
-                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Education Background</label>
+                        <div class="formatted-text">
+                            {% if education_points %}
+                                <ul class="bullet-list">
+                                    {% for point in education_points %}
+                                        <li>{{ point }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">No education background provided.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Working Experience</label>
+                        <div class="formatted-text">
+                            {% if experience_points %}
+                                <ul class="bullet-list">
+                                    {% for point in experience_points %}
+                                        <li>{{ point }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">No working experience provided.</p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Publications Tab -->
-            <div id="publications-tab" class="tab-content">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-book me-2 text-primary"></i>
-                            Publications
-                        </h5>
-                        <button class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-plus me-2"></i>Add Publication
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        {% set publications = [
-                        ('Deep Learning Approaches for Medical Image Segmentation', 'Journal of Medical AI', '2024',
-                        'journal'),
-                        ('Ethical Considerations in Autonomous Systems', 'IEEE AI Ethics Conference', '2023',
-                        'conference'),
-                        ('Machine Learning in Healthcare: A Comprehensive Review', 'Nature Medicine', '2023', 'journal')
-                        ] %}
-
-                        {% for title, venue, year, type in publications %}
-                        <div class="border rounded p-3 mb-3">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1">{{ title }}</h6>
-                                    <p class="text-muted small mb-0">
-                                        <i
-                                            class="fas fa-{{ 'book' if type == 'journal' else 'presentation' }} me-1"></i>
-                                        {{ venue }} ({{ year }})
-                                    </p>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-outline-primary btn-sm">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-outline-secondary btn-sm">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
+            <!-- Publications -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-book me-2"></i>Publications</h5>
                 </div>
-            </div>
-
-            <!-- Contact Tab -->
-            <div id="contact-tab" class="tab-content">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-envelope me-2 text-primary"></i>
-                            Contact Information
-                        </h5>
-                        <button class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-edit me-2"></i>Edit Contact Info
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="text-muted small">Email</label>
-                                <p class="mb-0">{{ current_user.email }}</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="text-muted small">Phone</label>
-                                <p class="mb-0">{{ current_user.phone or 'Not provided' }}</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="text-muted small">Office Hours</label>
-                                <p class="mb-0">{{ current_user.office_hours or 'By appointment' }}</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="text-muted small">Website</label>
-                                <p class="mb-0">
-                                    {% if current_user.website %}
-                                    <a href="{{ current_user.website }}" target="_blank">{{ current_user.website }}</a>
+                <div class="card-body">
+                    {% if publications %}
+                        {% for publication in publications %}
+                            <div class="border rounded p-3 mb-3">
+                                <h6 class="mb-1">{{ publication.title }}</h6>
+                                <p class="text-muted small mb-0">
+                                    {% if publication.venue %}
+                                        {{ publication.venue }}
+                                        {% if publication.year %} ({{ publication.year }}){% endif %}
+                                    {% elif publication.year %}
+                                        {{ publication.year }}
                                     {% else %}
-                                    Not provided
+                                        Publication details
                                     {% endif %}
                                 </p>
                             </div>
-                        </div>
-                    </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No publications added yet. Click "Edit Profile" to add your publications.</p>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Settings Tab -->
-            <div id="settings-tab" class="tab-content">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="mb-0">
-                            <i class="fas fa-cog me-2 text-primary"></i>
-                            Account Settings
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-12 mb-4">
-                                <h6>Profile Visibility</h6>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="publicProfile" checked>
-                                    <label class="form-check-label" for="publicProfile">
-                                        Make my profile publicly visible
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-12 mb-4">
-                                <h6>Email Notifications</h6>
-                                <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" id="emailCollaboration" checked>
-                                    <label class="form-check-label" for="emailCollaboration">
-                                        Collaboration requests
-                                    </label>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="emailUpdates">
-                                    <label class="form-check-label" for="emailUpdates">
-                                        System updates and announcements
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <button class="btn btn-primary me-2">Save Settings</button>
-                                <button class="btn btn-outline-secondary">Reset to Defaults</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Action Buttons -->
+            <div class="text-center mb-4">
+                <a href="{{ url_for('lecturer.edit_profile') }}" class="btn btn-primary me-2">
+                    <i class="fas fa-edit me-2"></i>Edit Profile
+                </a>
+                <a href="{{ url_for('routes.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-home me-2"></i>Back to Home
+                </a>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    // Tab switching logic
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function (e) {
-            e.preventDefault();
-            document.querySelectorAll('.nav-link').forEach(nav => nav.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+<style>
+/* Additional styles for better presentation */
+.card {
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
 
-            const tabId = this.getAttribute('data-tab');
-            document.getElementById(`${tabId}-tab`).classList.add('active');
-            this.classList.add('active');
-        });
-    });
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e5e7eb;
+}
 
-    function editProfile() {
-        // Redirect or open modal for editing profile
-        alert("Edit profile feature not yet implemented.");
-    }
-</script>
+.card-header h5 {
+    color: #374151;
+}
+
+label.text-muted {
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+p, .formatted-text {
+    color: #374151;
+    line-height: 1.5;
+    margin-bottom: 0;
+}
+
+.formatted-text {
+    line-height: 1.6;
+}
+
+/* Bullet list styling */
+.bullet-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    list-style-type: disc;
+}
+
+.bullet-list li {
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+}
+
+.bullet-list li:last-child {
+    margin-bottom: 0;
+}
+
+.btn-primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.alert {
+    border-radius: 8px;
+}
+</style>
 {% endblock %}
