@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - University Directory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 bg-dark text-white min-vh-100">
+            <div class="p-3">
+                <h5 class="mb-4">
+                    <i class="fas fa-cog me-2"></i>
+                    Admin Panel
+                </h5>
+                <nav class="nav flex-column">
+                    <a class="nav-link text-white-50" href="{{ url_for('admin.admin_dashboard') }}">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-users me-2 text-primary"></i>
+                        Manage Users
+                    </h1>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary" onclick="exportUsers()">
+                            <i class="fas fa-download me-2"></i>Export Users
+                        </button>
+                        <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add New User
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-4">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Search and Filter -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="searchInput" placeholder="Search users by name, email, or position..." onkeyup="filterUsers()">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="roleFilter" onchange="filterUsers()">
+                                    <option value="">All Roles</option>
+                                    <option value="Administrator">Administrator</option>
+                                    <option value="Expert">Expert</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="facultyFilter" onchange="filterUsers()">
+                                    <option value="">All Faculties</option>
+                                    <option value="Faculty of Computing and Informatics">Faculty of Computing and Informatics</option>
+                                    <option value="N/A">No Faculty</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2 text-primary"></i>
+                            User List
+                        </h5>
+                        <span class="badge bg-primary" id="userCount">{{ users|length if users else 0 }} Users</span>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if users %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="usersTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="px-4 py-3">User</th>
+                                        <th class="px-4 py-3">Role</th>
+                                        <th class="px-4 py-3">Faculty</th>
+                                        <th class="px-4 py-3">Position</th>
+                                        <th class="px-4 py-3">Contact</th>
+                                        <th class="px-4 py-3 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr class="user-row">
+                                        <td class="px-4 py-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar me-3">
+                                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-user"></i>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-medium user-name">{{ user.full_name }}</div>
+                                                    <small class="text-muted user-email">{{ user.email }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="badge {{ 'bg-danger' if user.role == 'Administrator' else 'bg-success' }} user-role">
+                                                {{ user.role }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="text-muted user-faculty">{{ user.faculty }}</span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="user-position">{{ user.position }}</span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="small">
+                                                {% if user.phone != 'N/A' %}
+                                                <div class="mb-1">
+                                                    <i class="fas fa-phone me-1 text-muted"></i>
+                                                    {{ user.phone }}
+                                                </div>
+                                                {% endif %}
+                                                {% if user.office_location != 'N/A' %}
+                                                <div>
+                                                    <i class="fas fa-map-marker-alt me-1 text-muted"></i>
+                                                    {{ user.office_location }}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3 text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ user.id }}', '{{ user.full_name }}')">
+                                                <i class="fas fa-trash me-1"></i>Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">No users found</h6>
+                            <p class="text-muted small mb-3">Start by adding your first user to the system.</p>
+                            <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Add New User
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Pagination (if needed) -->
+                {% if users and users|length > 10 %}
+                <nav aria-label="User pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Previous</a>
+                        </li>
+                        <li class="page-item active">
+                            <a class="page-link" href="#">1</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">2</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">3</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the user <strong id="deleteUserName"></strong>?</p>
+                <p class="text-muted small">This action cannot be undone. All associated data including expert profiles and activity logs will be permanently removed.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" id="deleteForm" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Delete User
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.min-vh-100 {
+    min-height: 100vh !important;
+}
+
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.card {
+    transition: transform 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.avatar {
+    flex-shrink: 0;
+}
+
+.user-row {
+    transition: background-color 0.2s ease;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.pagination .page-link {
+    color: #007bff;
+    border: 1px solid #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+#searchInput:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn-outline-danger:hover {
+    color: #fff;
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+</style>
+
+<script>
+let currentDeleteUserId = null;
+
+function filterUsers() {
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const roleFilter = document.getElementById('roleFilter').value.toLowerCase();
+    const facultyFilter = document.getElementById('facultyFilter').value.toLowerCase();
+    
+    const rows = document.querySelectorAll('.user-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const name = row.querySelector('.user-name').textContent.toLowerCase();
+        const email = row.querySelector('.user-email').textContent.toLowerCase();
+        const role = row.querySelector('.user-role').textContent.toLowerCase();
+        const faculty = row.querySelector('.user-faculty').textContent.toLowerCase();
+        const position = row.querySelector('.user-position').textContent.toLowerCase();
+        
+        const matchesSearch = name.includes(searchInput) || 
+                            email.includes(searchInput) || 
+                            position.includes(searchInput);
+        
+        const matchesRole = !roleFilter || role.includes(roleFilter);
+        const matchesFaculty = !facultyFilter || faculty.includes(facultyFilter);
+        
+        if (matchesSearch && matchesRole && matchesFaculty) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('userCount').textContent = `${visibleCount} Users`;
+}
+
+function confirmDelete(userId, userName) {
+    currentDeleteUserId = userId;
+    document.getElementById('deleteUserName').textContent = userName;
+    document.getElementById('deleteForm').action = `/admin/delete-user/${userId}`;
+    
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+
+function exportUsers() {
+    // Implement user export functionality
+    alert('Export functionality would be implemented here');
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Manage Users page loaded');
+});
+</script>
+
+{% endblock %}
