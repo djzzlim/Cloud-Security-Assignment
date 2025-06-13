@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, current_app, request, redirect, url_for, flash
+from flask import Blueprint, render_template, current_app, request, redirect, url_for, flash, jsonify
 import pyodbc
 from datetime import datetime, timedelta
 import logging
@@ -23,6 +23,8 @@ def get_db_connection():
         return conn
     except Exception as e:
         current_app.logger.error(f"Database connection error: {e}")
+        return None
+
 def hash_password(password):
     """Hash password using SHA-256 (in production, use bcrypt or similar)"""
     return hashlib.sha256(password.encode()).hexdigest()
@@ -74,6 +76,135 @@ def get_faculties():
         if conn:
             conn.close()
         return []
+
+def create_faculty(faculty_name):
+    """Create a new faculty in the database"""
+    conn = get_db_connection()
+    if not conn:
+        return False, "Database connection failed"
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Check if faculty already exists
+        cursor.execute("SELECT COUNT(*) FROM Faculty WHERE FacultyName = ?", (faculty_name,))
+        if cursor.fetchone()[0] > 0:
+            cursor.close()
+            conn.close()
+            return False, "Faculty already exists"
+        
+        # Insert faculty
+        cursor.execute("INSERT INTO Faculty (FacultyName) VALUES (?)", (faculty_name,))
+        
+        # Log the activity
+        cursor.execute("""
+            INSERT INTO ActivityLog (UserID, Action)
+            VALUES (?, ?)
+        """, (None, f"New faculty created: {faculty_name}"))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True, "Faculty created successfully"
+        
+    except Exception as e:
+        current_app.logger.error(f"Error creating faculty: {e}")
+        cursor.close()
+        conn.close()
+        return False, f"Error creating faculty: {str(e)}"
+
+def get_all_users():
+    """Fetch all users with their roles and expert information"""
+    conn = get_db_connection()
+    if not conn:
+        return []
+    
+    try:
+        cursor = conn.cursor()
+        query = """
+            SELECT 
+                u.UserID,
+                u.FullName,
+                u.Email,
+                r.RoleName,
+                f.FacultyName,
+                e.Position,
+                e.Phone,
+                e.OfficeLocation
+            FROM [User] u
+            LEFT JOIN Role r ON u.RoleID = r.RoleID
+            LEFT JOIN Expert e ON u.UserID = e.UserID
+            LEFT JOIN Faculty f ON e.FacultyID = f.FacultyID
+            ORDER BY u.FullName
+        """
+        
+        cursor.execute(query)
+        users = []
+        for row in cursor.fetchall():
+            users.append({
+                'id': row.UserID,
+                'full_name': row.FullName,
+                'email': row.Email,
+                'role': row.RoleName or 'Unknown',
+                'faculty': row.FacultyName or 'N/A',
+                'position': row.Position or 'N/A',
+                'phone': row.Phone or 'N/A',
+                'office_location': row.OfficeLocation or 'N/A'
+            })
+        
+        cursor.close()
+        conn.close()
+        return users
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching users: {e}")
+        cursor.close()
+        conn.close()
+        return []
+
+def delete_user(user_id):
+    """Delete a user from the database"""
+    conn = get_db_connection()
+    if not conn:
+        return False, "Database connection failed"
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Get user name for logging
+        cursor.execute("SELECT FullName FROM [User] WHERE UserID = ?", (user_id,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            cursor.close()
+            conn.close()
+            return False, "User not found"
+        
+        user_name = user_row.FullName
+        
+        # Delete user (cascade will handle Expert and other related records)
+        cursor.execute("DELETE FROM [User] WHERE UserID = ?", (user_id,))
+        
+        if cursor.rowcount == 0:
+            cursor.close()
+            conn.close()
+            return False, "User not found"
+        
+        # Log the activity
+        cursor.execute("""
+            INSERT INTO ActivityLog (UserID, Action)
+            VALUES (?, ?)
+        """, (None, f"User deleted: {user_name}"))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True, f"User '{user_name}' deleted successfully"
+        
+    except Exception as e:
+        current_app.logger.error(f"Error deleting user: {e}")
+        cursor.close()
+        conn.close()
+        return False, f"Error deleting user: {str(e)}"
 
 def create_user(user_data):
     """Create a new user in the database"""
@@ -200,7 +331,7 @@ def get_recent_activities():
                 r.RoleName,
                 u.UserID
             FROM ActivityLog al
-            INNER JOIN [User] u ON al.UserID = u.UserID
+            LEFT JOIN [User] u ON al.UserID = u.UserID
             LEFT JOIN Role r ON u.RoleID = r.RoleID
             ORDER BY al.Timestamp DESC
         """
@@ -236,8 +367,8 @@ def get_recent_activities():
             activities.append({
                 'action': row.Action,
                 'timestamp': row.Timestamp,
-                'user_name': row.FullName,
-                'role': row.RoleName or 'Unknown',
+                'user_name': row.FullName or 'System',
+                'role': row.RoleName or 'System',
                 'time_ago': time_ago,
                 'status': status
             })
@@ -325,6 +456,41 @@ def add_user():
     faculties = get_faculties()
     
     return render_template('admin/add_user.html', roles=roles, faculties=faculties)
+
+@admin.route('/add_faculty', methods=['GET', 'POST'])
+def add_faculty():
+    """Add new faculty page"""
+    if request.method == 'POST':
+        faculty_name = request.form.get('faculty_name', '').strip()
+        
+        if not faculty_name:
+            flash('Faculty name is required', 'error')
+        else:
+            success, message = create_faculty(faculty_name)
+            if success:
+                flash(message, 'success')
+                return redirect(url_for('admin.admin_dashboard'))
+            else:
+                flash(message, 'error')
+    
+    return render_template('admin/add_faculty.html')
+
+@admin.route('/manage-users')
+def manage_users():
+    """Manage users page"""
+    users = get_all_users()
+    return render_template('admin/manage_users.html', users=users)
+
+@admin.route('/delete-user/<user_id>', methods=['POST'])
+def delete_user_route(user_id):
+    """Delete user endpoint"""
+    success, message = delete_user(user_id)
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'error')
+    
+    return redirect(url_for('admin.manage_users'))
 
 @admin.route('/test-db')
 def test_database_connection():
