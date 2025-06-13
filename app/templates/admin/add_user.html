@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}Add New User - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 bg-dark text-white min-vh-100">
+            <div class="p-3">
+                <h5 class="mb-4">
+                    <i class="fas fa-cog me-2"></i>
+                    Admin Panel
+                </h5>
+                <nav class="nav flex-column">
+                    <a class="nav-link text-white-50" href="{{ url_for('admin.admin_dashboard') }}">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                    <a class="nav-link text-white active" href="#">
+                        <i class="fas fa-user-plus me-2"></i>Add New User
+                    </a>
+                    <a class="nav-link text-white-50" href="#">
+                        <i class="fas fa-users me-2"></i>Manage Users
+                    </a>
+                    <a class="nav-link text-white-50" href="#">
+                        <i class="fas fa-user-graduate me-2"></i>Faculty Profiles
+                    </a>
+                    <a class="nav-link text-white-50" href="#">
+                        <i class="fas fa-building me-2"></i>Departments
+                    </a>
+                    <a class="nav-link text-white-50" href="#">
+                        <i class="fas fa-tags me-2"></i>Research Areas
+                    </a>
+                    <a class="nav-link text-white-50" href="#">
+                        <i class="fas fa-chart-bar me-2"></i>Analytics
+                    </a>
+                    <a class="nav-link text-white-50" href="#">
+                        <i class="fas fa-cogs me-2"></i>Settings
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-user-plus me-2 text-primary"></i>
+                        Add New User
+                    </h1>
+                    <div>
+                        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-4">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Add User Form -->
+                <div class="row">
+                    <div class="col-lg-8 mx-auto">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-user-circle me-2 text-primary"></i>
+                                    User Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" id="addUserForm">
+                                    <!-- Basic Information -->
+                                    <div class="row mb-4">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="full_name" class="form-label">
+                                                <i class="fas fa-user me-1"></i>Full Name <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control" id="full_name" name="full_name" 
+                                                   placeholder="Enter full name" required value="{{ request.form.get('full_name', '') }}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="email" class="form-label">
+                                                <i class="fas fa-envelope me-1"></i>Email Address <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="email" class="form-control" id="email" name="email" 
+                                                   placeholder="Enter email address" required value="{{ request.form.get('email', '') }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-4">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="password" class="form-label">
+                                                <i class="fas fa-lock me-1"></i>Password <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="password" name="password" 
+                                                       placeholder="Enter password" required>
+                                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                            <div class="form-text">Password should be at least 8 characters long</div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="role_id" class="form-label">
+                                                <i class="fas fa-user-tag me-1"></i>Role <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-select" id="role_id" name="role_id" required>
+                                                {% for role in roles %}
+                                                    <option value="{{ role.id }}" 
+                                                            {{ 'selected' if request.form.get('role_id') == role.id|string else '' }}>
+                                                        {{ role.name }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expert-specific fields (shown when Expert role is selected) -->
+                                    <div id="expertFields" style="display: none;">
+                                        <div class="card bg-light border-0 mb-4">
+                                            <div class="card-header bg-transparent border-0">
+                                                <h6 class="mb-0 text-primary">
+                                                    <i class="fas fa-user-graduate me-2"></i>
+                                                    Expert Profile Information
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="faculty_id" class="form-label">
+                                                            <i class="fas fa-building me-1"></i>Faculty
+                                                        </label>
+                                                        <select class="form-select" id="faculty_id" name="faculty_id">
+                                                            <option value="">Select Faculty</option>
+                                                            {% for faculty in faculties %}
+                                                                <option value="{{ faculty.id }}" 
+                                                                        {{ 'selected' if request.form.get('faculty_id') == faculty.id|string else '' }}>
+                                                                    {{ faculty.name }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="title" class="form-label">
+                                                            <i class="fas fa-graduation-cap me-1"></i>Academic Title
+                                                        </label>
+                                                        <input type="text" class="form-control" id="title" name="title" 
+                                                               placeholder="e.g., Dr., Prof." value="{{ request.form.get('title', '') }}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="position" class="form-label">
+                                                            <i class="fas fa-briefcase me-1"></i>Position
+                                                        </label>
+                                                        <input type="text" class="form-control" id="position" name="position" 
+                                                               placeholder="e.g., Senior Lecturer" value="{{ request.form.get('position', '') }}">
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="phone" class="form-label">
+                                                            <i class="fas fa-phone me-1"></i>Phone Number
+                                                        </label>
+                                                        <input type="tel" class="form-control" id="phone" name="phone" 
+                                                               placeholder="Enter phone number" value="{{ request.form.get('phone', '') }}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="office_location" class="form-label">
+                                                            <i class="fas fa-map-marker-alt me-1"></i>Office Location
+                                                        </label>
+                                                        <input type="text" class="form-control" id="office_location" name="office_location" 
+                                                               placeholder="e.g., FCI 3-10" value="{{ request.form.get('office_location', '') }}">
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="photo_url" class="form-label">
+                                                            <i class="fas fa-image me-1"></i>Photo URL
+                                                        </label>
+                                                        <input type="url" class="form-control" id="photo_url" name="photo_url" 
+                                                               placeholder="https://example.com/photo.jpg" value="{{ request.form.get('photo_url', '') }}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label for="biography" class="form-label">
+                                                        <i class="fas fa-user-edit me-1"></i>Biography
+                                                    </label>
+                                                    <textarea class="form-control" id="biography" name="biography" rows="3" 
+                                                              placeholder="Brief biography and research interests">{{ request.form.get('biography', '') }}</textarea>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label for="education_background" class="form-label">
+                                                        <i class="fas fa-university me-1"></i>Education Background
+                                                    </label>
+                                                    <textarea class="form-control" id="education_background" name="education_background" rows="4" 
+                                                              placeholder="Education history with degrees and institutions">{{ request.form.get('education_background', '') }}</textarea>
+                                                </div>
+
+                                                <div class="mb-0">
+                                                    <label for="working_experience" class="form-label">
+                                                        <i class="fas fa-briefcase me-1"></i>Working Experience
+                                                    </label>
+                                                    <textarea class="form-control" id="working_experience" name="working_experience" rows="4" 
+                                                              placeholder="Professional experience and positions">{{ request.form.get('working_experience', '') }}</textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Form Actions -->
+                                    <div class="d-flex justify-content-between pt-3 border-top">
+                                        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary">
+                                            <i class="fas fa-times me-2"></i>Cancel
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-user-plus me-2"></i>Create User
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.min-vh-100 {
+    min-height: 100vh !important;
+}
+
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.card {
+    transition: transform 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.required-field {
+    color: #dc3545;
+}
+
+#expertFields {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('role_id');
+    const expertFields = document.getElementById('expertFields');
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+
+    // Show/hide expert fields based on role selection
+    function toggleExpertFields() {
+        const selectedRole = roleSelect.options[roleSelect.selectedIndex].text;
+        if (selectedRole === 'Expert') {
+            expertFields.style.display = 'block';
+        } else {
+            expertFields.style.display = 'none';
+        }
+    }
+
+    // Initial check on page load
+    toggleExpertFields();
+
+    // Listen for role changes
+    roleSelect.addEventListener('change', toggleExpertFields);
+
+    // Password visibility toggle
+    togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        const icon = this.querySelector('i');
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+    });
+
+    // Form validation
+    document.getElementById('addUserForm').addEventListener('submit', function(e) {
+        const password = passwordInput.value;
+        if (password.length < 8) {
+            e.preventDefault();
+            alert('Password must be at least 8 characters long');
+            passwordInput.focus();
+        }
+    });
+});
+</script>
+{% endblock %}
