@@ -8,6 +8,8 @@ from werkzeug.security import generate_password_hash
 from app import db
 from app.models.models import User, Expert, Faculty, Publication, ExpertPublicationRelation, ActivityLog
 from config import *
+import boto3
+from flask import current_app  # in case you prefer accessing config via current_app.config
 
 lecturer = Blueprint('lecturer', __name__, url_prefix='/lecturer')
 
@@ -191,47 +193,47 @@ def update_profile():
                         filename = secure_filename(file.filename)
                         file_extension = filename.rsplit('.', 1)[1].lower()
                         unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
-                        
-                        # Ensure upload directory exists
-                        full_upload_path = os.path.abspath(UPLOAD_FOLDER)
-                        os.makedirs(full_upload_path, exist_ok=True)
-                        print(f"Upload directory: {full_upload_path}")
-                        
-                        # Create full file path
-                        file_path = os.path.join(full_upload_path, unique_filename)
-                        print(f"Full file path: {file_path}")
-                        
+                        s3_key = f"expert-photos/{unique_filename}"
+
                         # Reset file pointer to beginning
                         file.seek(0)
-                        
-                        # Save file
-                        file.save(file_path)
-                        print(f"File saved to: {file_path}")
-                        
-                        # Verify file was saved and get actual size
-                        if os.path.exists(file_path):
-                            file_size = os.path.getsize(file_path)
-                            print(f"File saved successfully. Size: {file_size} bytes")
-                            
-                            # Update database with relative path (for web access)
-                            relative_path = f"uploads/profiles/{unique_filename}"
-                            expert.photo_url = relative_path
-                            print(f"Database photo_url set to: {expert.photo_url}")
-                            
-                            # Force database flush to ensure the change is registered
-                            db.session.flush()
-                            print(f"After flush, expert.photo_url = {expert.photo_url}")
-                            
-                            flash("Profile photo uploaded successfully!", "success")
-                        else:
-                            print("ERROR: File was not saved properly")
-                            flash("Error: Failed to save profile photo", "error")
-                            
+
+                        # Initialize boto3 S3 client
+                        s3 = boto3.client(
+                            "s3",
+                            aws_access_key_id=current_app.config['S3_ACCESS_KEY'],
+                            aws_secret_access_key=current_app.config['S3_SECRET_KEY'],
+                            region_name=current_app.config['S3_REGION']
+                        )
+
+                        # Upload file to S3
+                        s3.upload_fileobj(
+                            file,
+                            current_app.config['S3_BUCKET_NAME'],
+                            s3_key,
+                            ExtraArgs={
+                                "ACL": "public-read",
+                                "ContentType": file.content_type
+                            }
+                        )
+
+                        # Construct public URL for the uploaded file
+                        photo_url = f"https://{current_app.config['S3_BUCKET_NAME']}.s3.{current_app.config['S3_REGION']}.amazonaws.com/{s3_key}"
+                        expert.photo_url = photo_url
+                        print(f"Uploaded to S3 and saved URL: {photo_url}")
+
+                        # Flush the DB session to persist URL change
+                        db.session.flush()
+                        print(f"After flush, expert.photo_url = {expert.photo_url}")
+
+                        flash("Profile photo uploaded successfully to S3!", "success")
+
                     except Exception as file_error:
-                        print(f"File upload error: {str(file_error)}")
+                        print(f"S3 upload error: {str(file_error)}")
                         import traceback
                         traceback.print_exc()
                         flash(f"Error uploading photo: {str(file_error)}", "error")
+
                 else:
                     print(f"File validation failed: {message}")
                     flash(message, "error")
@@ -379,56 +381,109 @@ def get_faculties():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @lecturer.route('/api/upload-photo', methods=['POST'])
 @login_required
 def upload_photo():
-    """Handle photo upload via AJAX"""
+    """Handle photo upload via AJAX and upload to S3"""
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
-        
+
         file = request.files['file']
-        
+
         # Validate file
         is_valid, message = validate_image_file(file)
         if not is_valid:
             return jsonify({'error': message}), 400
-        
+
         # Process file
         filename = secure_filename(file.filename)
         file_extension = filename.rsplit('.', 1)[1].lower()
         unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
-        
-        # Create directory and save file
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-        file.save(file_path)
-        
-        # Verify file was saved
-        if not os.path.exists(file_path):
-            return jsonify({'error': 'Failed to save file'}), 500
-        
+
+        # Upload to S3
+        s3 = boto3.client('s3', region_name=Config.S3_REGION)
+        file.seek(0)
+        s3.upload_fileobj(
+            Fileobj=file,
+            Bucket=Config.S3_BUCKET_NAME,
+            Key=unique_filename,
+            ExtraArgs={'ACL': 'public-read', 'ContentType': file.content_type}
+        )
+
         # Update expert photo URL in database
         expert = Expert.query.filter_by(user_id=current_user.id).first()
         if not expert:
             expert = Expert(user_id=current_user.id)
             db.session.add(expert)
             db.session.flush()
-        
-        expert.photo_url = f"uploads/profiles/{unique_filename}"
+
+        expert.photo_url = f"{Config.S3_PUBLIC_URL_PREFIX}{unique_filename}"
         db.session.commit()
-        
-        # Return success with photo URL
-        photo_url = url_for('static', filename=f"uploads/profiles/{unique_filename}")
+
+        # Return success with full S3 URL
         return jsonify({
-            'success': True, 
-            'photo_url': photo_url,
+            'success': True,
+            'photo_url': expert.photo_url,
             'message': 'Photo uploaded successfully'
         })
-        
+
     except Exception as e:
         print(f"AJAX upload error: {str(e)}")
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
+
+
+# @lecturer.route('/api/upload-photo', methods=['POST'])
+# @login_required
+# def upload_photo():
+#     """Handle photo upload via AJAX"""
+#     try:
+#         if 'file' not in request.files:
+#             return jsonify({'error': 'No file provided'}), 400
+        
+#         file = request.files['file']
+        
+#         # Validate file
+#         is_valid, message = validate_image_file(file)
+#         if not is_valid:
+#             return jsonify({'error': message}), 400
+        
+#         # Process file
+#         filename = secure_filename(file.filename)
+#         file_extension = filename.rsplit('.', 1)[1].lower()
+#         unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+        
+#         # Create directory and save file
+#         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+#         file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+#         file.save(file_path)
+        
+#         # Verify file was saved
+#         if not os.path.exists(file_path):
+#             return jsonify({'error': 'Failed to save file'}), 500
+        
+#         # Update expert photo URL in database
+#         expert = Expert.query.filter_by(user_id=current_user.id).first()
+#         if not expert:
+#             expert = Expert(user_id=current_user.id)
+#             db.session.add(expert)
+#             db.session.flush()
+        
+#         expert.photo_url = f"uploads/profiles/{unique_filename}"
+#         db.session.commit()
+        
+#         # Return success with photo URL
+#         photo_url = url_for('static', filename=f"uploads/profiles/{unique_filename}")
+#         return jsonify({
+#             'success': True, 
+#             'photo_url': photo_url,
+#             'message': 'Photo uploaded successfully'
+#         })
+        
+#     except Exception as e:
+#         print(f"AJAX upload error: {str(e)}")
+#         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 @lecturer.route('/api/profile-data')
 @login_required

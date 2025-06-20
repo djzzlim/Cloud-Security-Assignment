@@ -4,6 +4,9 @@ from datetime import datetime, timedelta
 import logging
 import uuid
 import hashlib
+import os
+from werkzeug.utils import secure_filename
+import boto3
 
 admin = Blueprint('admin', __name__)
 
@@ -408,6 +411,22 @@ def admin_dashboard():
         return render_template('admin/dashboard.html', 
                              database_error=f"Dashboard error: {str(e)}")
 
+def validate_image_file(file):
+    allowed_types = ['image/jpeg', 'image/png', 'image/jpg']
+    max_size = 2 * 1024 * 1024  # 2MB
+
+    if file.content_type.lower() not in allowed_types:
+        return False, "Only JPG and PNG images are allowed."
+
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+
+    if size > max_size:
+        return False, "Image must be under 2MB."
+
+    return True, "Valid"
+
 @admin.route('/add-user', methods=['GET', 'POST'])
 def add_user():
     """Add new user page"""
@@ -426,15 +445,50 @@ def add_user():
             'biography': request.form.get('biography', '').strip(),
             'education_background': request.form.get('education_background', '').strip(),
             'working_experience': request.form.get('working_experience', '').strip(),
-            'photo_url': request.form.get('photo_url', '').strip()
+            'photo_url': None  # placeholder, will be filled if file uploaded
         }
-        
+
         # Convert empty faculty_id to None
         if user_data['faculty_id'] == '':
             user_data['faculty_id'] = None
         else:
             user_data['faculty_id'] = int(user_data['faculty_id'])
-        
+
+        # Handle file upload
+        if 'profile_photo' in request.files:
+            file = request.files['profile_photo']
+            if file and file.filename:
+                is_valid, message = validate_image_file(file)
+                if is_valid:
+                    try:
+                        filename = secure_filename(file.filename)
+                        ext = filename.rsplit('.', 1)[-1].lower()
+                        unique_filename = f"{uuid.uuid4().hex}.{ext}"
+                        s3_key = f"expert-photos/{unique_filename}"
+
+                        file.seek(0)
+                        s3 = boto3.client(
+    "s3",
+    region_name=current_app.config['S3_REGION']
+)
+
+
+                        s3.upload_fileobj(
+                            file,
+                            current_app.config['S3_BUCKET_NAME'],
+                            s3_key,
+                            ExtraArgs={"ACL": "public-read", "ContentType": file.content_type}
+                        )
+
+                        photo_url = f"https://{current_app.config['S3_BUCKET_NAME']}.s3.{current_app.config['S3_REGION']}.amazonaws.com/{s3_key}"
+                        user_data['photo_url'] = photo_url
+                    except Exception as e:
+                        flash(f"Error uploading photo: {e}", 'error')
+                        return redirect(request.url)
+                else:
+                    flash(message, 'error')
+                    return redirect(request.url)
+
         # Basic validation
         if not user_data['full_name']:
             flash('Full name is required', 'error')
@@ -443,19 +497,19 @@ def add_user():
         elif not user_data['password']:
             flash('Password is required', 'error')
         else:
-            # Create user
             success, message = create_user(user_data)
             if success:
                 flash(message, 'success')
                 return redirect(url_for('admin.admin_dashboard'))
             else:
                 flash(message, 'error')
-    
+
     # Get roles and faculties for form
     roles = get_roles()
     faculties = get_faculties()
-    
+
     return render_template('admin/add_user.html', roles=roles, faculties=faculties)
+
 
 @admin.route('/add_faculty', methods=['GET', 'POST'])
 def add_faculty():
