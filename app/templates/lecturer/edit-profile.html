@@ -379,15 +379,20 @@
                 <div class="form-section">
                     <h5><i class="fas fa-user me-2"></i>Basic Information</h5>
 
-                    <!-- Profile Photo -->
-                    <div class="profile-photo-section">
-                        <div class="profile-photo-preview" id="photoPreview">
-                            {% if user_data.photo_url %}
-                            <img src="{{ url_for('static', filename=user_data.photo_url) }}" alt="Profile Photo">
-                            {% else %}
-                            <i class="fas fa-user photo-placeholder"></i>
-                            {% endif %}
-                        </div>
+                 <!-- Profile Photo -->
+<div class="profile-photo-section">
+    <div class="profile-photo-preview" id="photoPreview">
+       {% if user_data and user_data.photo_url %}
+    <img src="{{ user_data.photo_url }}" alt="Profile Photo" class="rounded-circle"
+         width="120" height="120"
+         style="object-fit: cover; border: 3px solid #e5e7eb;">
+
+        {% else %}
+            <i class="fas fa-user photo-placeholder"></i>
+        {% endif %}
+    </div>
+</div>
+
                         <div>
                             <div class="file-input-wrapper">
                                 <input type="file" id="profilePhoto" name="profile_photo" accept="image/*">

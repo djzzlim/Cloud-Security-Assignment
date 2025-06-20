@@ -62,7 +62,7 @@
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <form method="POST" id="addUserForm">
+                                <form method="POST" id="addUserForm" enctype="multipart/form-data">
                                     <!-- Basic Information -->
                                     <div class="row mb-4">
                                         <div class="col-md-6 mb-3">
@@ -170,12 +170,12 @@
                                                                placeholder="e.g., FCI 3-10" value="{{ request.form.get('office_location', '') }}">
                                                     </div>
                                                     <div class="col-md-6 mb-3">
-                                                        <label for="photo_url" class="form-label">
-                                                            <i class="fas fa-image me-1"></i>Photo URL
-                                                        </label>
-                                                        <input type="url" class="form-control" id="photo_url" name="photo_url" 
-                                                               placeholder="https://example.com/photo.jpg" value="{{ request.form.get('photo_url', '') }}">
-                                                    </div>
+    <label for="profile_photo" class="form-label">
+        <i class="fas fa-image me-1"></i>Upload Photo
+    </label>
+    <input type="file" class="form-control" id="profile_photo" name="profile_photo" accept="image/*">
+</div>
+
                                                 </div>
 
                                                 <div class="mb-3">
