@@ -1,3 +1,4 @@
+import hashlib
 import re
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
 from flask_login import login_user, logout_user, current_user
@@ -30,7 +31,8 @@ def login():
             flash('Email address not found. Please check and try again.', 'danger')
             return render_template('auth/login.html')
 
-        if password == user.password:  # Check if passwords match
+        
+        if hashlib.sha256(password.encode()).hexdigest() == user.password:  # Check if passwords match
             login_user(user)  # Log in the user
 
             # Redirect to the dashboard based on the role
