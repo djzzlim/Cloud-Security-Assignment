@@ -245,8 +245,7 @@
         <div class="profile-basic-info">
             <div>
                 {% if expert.photo_url %}
-                    <img src="{{ url_for('static', filename=expert.photo_url) }}">
-
+                    <img src="{{ expert.photo_url }}" 
                          alt="{{ expert.name }}" 
                          class="profile-photo">
                 {% else %}

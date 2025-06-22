@@ -181,7 +181,7 @@ def update_profile():
             print(f"File received: {file.filename}")  # Debug print
             print(f"File size: {file.content_length if hasattr(file, 'content_length') else 'unknown'}")
             
-            # Check if a file was actually selected
+ # Check if a file was actually selected
             if file and file.filename and file.filename != '':
                 # Validate file
                 is_valid, message = validate_image_file(file)
@@ -401,13 +401,19 @@ def upload_photo():
         filename = secure_filename(file.filename)
         file_extension = filename.rsplit('.', 1)[1].lower()
         unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+        s3_key = f"expert-photos/{unique_filename}"
 
         # Upload to S3
-        s3 = boto3.client('s3', region_name=Config.S3_REGION)
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=current_app.config['S3_ACCESS_KEY'],
+            aws_secret_access_key=current_app.config['S3_SECRET_KEY'],
+            region_name=current_app.config['S3_REGION']
+        )
         file.seek(0)
         s3.upload_fileobj(
             Fileobj=file,
-            Bucket=Config.S3_BUCKET_NAME,
+            Bucket=current_app.config['S3_BUCKET_NAME'],
             Key=unique_filename,
             ExtraArgs={'ACL': 'public-read', 'ContentType': file.content_type}
         )
@@ -419,7 +425,7 @@ def upload_photo():
             db.session.add(expert)
             db.session.flush()
 
-        expert.photo_url = f"{Config.S3_PUBLIC_URL_PREFIX}{unique_filename}"
+        expert.photo_url = f"https://{current_app.config['S3_BUCKET_NAME']}.s3.{current_app.config['S3_REGION']}.amazonaws.com/{s3_key}"
         db.session.commit()
 
         # Return success with full S3 URL
