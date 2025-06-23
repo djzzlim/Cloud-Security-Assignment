@@ -29,14 +29,6 @@
                         <i class="fas fa-tachometer-alt me-2 text-primary"></i>
                         Dashboard Overview
                     </h1>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary">
-                            <i class="fas fa-download me-2"></i>Export Data
-                        </button>
-                        <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>Add New User
-                        </a>
-                    </div>
                 </div>
 
                 <!-- Flash Messages -->
@@ -233,10 +225,10 @@
         </a>
 
         <!-- Manage Departments -->
-        <button class="btn btn-outline-warning">
-            <i class="fas fa-building me-2"></i>
-            Manage Departments
-        </button>
+<a href="{{ url_for('admin.manage_faculties') }}" class="btn btn-outline-warning">
+    <i class="fas fa-building me-2"></i>
+    Manage Faculties
+</a>
 
     </div>
 </div>
