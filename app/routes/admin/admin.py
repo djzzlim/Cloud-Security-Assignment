@@ -306,6 +306,96 @@ def get_recent_activities():
         current_app.logger.error(f"Error fetching recent activities: {e}")
         return None
 
+def get_faculties_with_expert_count():
+    """Fetch all faculties with their expert count using SQLAlchemy"""
+    try:
+        query = text("""
+            SELECT 
+                f.FacultyID,
+                f.FacultyName,
+                COUNT(e.ExpertID) as expert_count
+            FROM Faculty f
+            LEFT JOIN Expert e ON f.FacultyID = e.FacultyID
+            GROUP BY f.FacultyID, f.FacultyName
+            ORDER BY f.FacultyName
+        """)
+        
+        result = db.session.execute(query)
+        faculties = []
+        for row in result:
+            faculties.append({
+                'id': row.FacultyID,
+                'name': row.FacultyName,
+                'expert_count': row.expert_count
+            })
+        
+        return faculties
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching faculties with expert count: {e}")
+        return []
+
+def delete_faculty(faculty_id):
+    """Delete a faculty from the database using SQLAlchemy"""
+    try:
+        # First check if faculty has any experts
+        result = db.session.execute(text("""
+            SELECT COUNT(*) as count 
+            FROM Expert 
+            WHERE FacultyID = :faculty_id
+        """), {'faculty_id': faculty_id})
+        
+        expert_count = result.fetchone().count
+        if expert_count > 0:
+            return False, f"Cannot delete faculty. It has {expert_count} expert(s) assigned to it. Please reassign or remove the experts first."
+        
+        # Get faculty name for logging
+        result = db.session.execute(text("SELECT FacultyName FROM Faculty WHERE FacultyID = :faculty_id"), 
+                                  {'faculty_id': faculty_id})
+        faculty_row = result.fetchone()
+        if not faculty_row:
+            return False, "Faculty not found"
+        
+        faculty_name = faculty_row.FacultyName
+        
+        # Delete faculty
+        result = db.session.execute(text("DELETE FROM Faculty WHERE FacultyID = :faculty_id"), 
+                                   {'faculty_id': faculty_id})
+        
+        if result.rowcount == 0:
+            return False, "Faculty not found"
+        
+        # Log the activity
+        db.session.execute(text("""
+            INSERT INTO ActivityLog (UserID, Action, Timestamp)
+            VALUES (:user_id, :action, NOW())
+        """), {'user_id': None, 'action': f"Faculty deleted: {faculty_name}"})
+        
+        db.session.commit()
+        return True, f"Faculty '{faculty_name}' deleted successfully"
+        
+    except Exception as e:
+        current_app.logger.error(f"Error deleting faculty: {e}")
+        db.session.rollback()
+        return False, f"Error deleting faculty: {str(e)}"
+
+@admin.route('/manage-faculties')
+def manage_faculties():
+    """Manage faculties page"""
+    faculties = get_faculties_with_expert_count()
+    return render_template('admin/manage_faculty.html', faculties=faculties)
+
+@admin.route('/delete-faculty/<int:faculty_id>', methods=['POST'])
+def delete_faculty_route(faculty_id):
+    """Delete faculty endpoint"""
+    success, message = delete_faculty(faculty_id)
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'error')
+    
+    return redirect(url_for('admin.manage_faculties'))
+
 @admin.route('/')
 def admin_dashboard():
     """Admin dashboard with real database data"""
