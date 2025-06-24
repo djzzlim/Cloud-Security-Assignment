@@ -17,6 +17,31 @@ def hash_password(password):
     """Hash password using SHA-256 (in production, use bcrypt or similar)"""
     return hashlib.sha256(password.encode()).hexdigest()
 
+def log_activity(user_id, action):
+    """
+    Log an activity with current timestamp
+    
+    Args:
+        user_id (str): User ID who performed the action (None for system actions)
+        action (str): Description of the action performed
+    """
+    try:
+        db.session.execute(text("""
+            INSERT INTO ActivityLog (UserID, Action, Timestamp)
+            VALUES (:user_id, :action, :timestamp)
+        """), {
+            'user_id': user_id,
+            'action': action,
+            'timestamp': datetime.now()
+        })
+        
+        db.session.commit()
+        current_app.logger.info(f"Activity logged: {action}")
+        
+    except Exception as e:
+        current_app.logger.error(f"Error logging activity: {e}")
+        db.session.rollback()
+
 def get_roles():
     """Fetch all roles from database using SQLAlchemy"""
     try:
@@ -42,7 +67,7 @@ def get_faculties():
         return []
 
 def create_faculty(faculty_name):
-    """Create a new faculty in the database using SQLAlchemy"""
+    """Create a new faculty in the database using SQLAlchemy with proper activity logging"""
     try:
         # Check if faculty already exists
         result = db.session.execute(text("SELECT COUNT(*) as count FROM Faculty WHERE FacultyName = :name"), 
@@ -54,13 +79,9 @@ def create_faculty(faculty_name):
         db.session.execute(text("INSERT INTO Faculty (FacultyName) VALUES (:name)"), 
                           {'name': faculty_name})
         
-        # Log the activity
-        db.session.execute(text("""
-            INSERT INTO ActivityLog (UserID, Action, Timestamp)
-            VALUES (:user_id, :action, NOW())
-        """), {'user_id': None, 'action': f"New faculty created: {faculty_name}"})
+        # Log the activity with current timestamp
+        log_activity(None, f"New faculty created: {faculty_name}")
         
-        db.session.commit()
         return True, "Faculty created successfully"
         
     except Exception as e:
@@ -109,7 +130,7 @@ def get_all_users():
         return []
 
 def delete_user(user_id):
-    """Delete a user from the database using SQLAlchemy"""
+    """Delete a user from the database using SQLAlchemy with proper activity logging"""
     try:
         # Get user name for logging
         result = db.session.execute(text("SELECT FullName FROM User WHERE UserID = :user_id"), 
@@ -127,13 +148,9 @@ def delete_user(user_id):
         if result.rowcount == 0:
             return False, "User not found"
         
-        # Log the activity
-        db.session.execute(text("""
-            INSERT INTO ActivityLog (UserID, Action, Timestamp)
-            VALUES (:user_id, :action, NOW())
-        """), {'user_id': None, 'action': f"User deleted: {user_name}"})
+        # Log the activity with current timestamp
+        log_activity(None, f"User deleted: {user_name}")
         
-        db.session.commit()
         return True, f"User '{user_name}' deleted successfully"
         
     except Exception as e:
@@ -142,7 +159,7 @@ def delete_user(user_id):
         return False, f"Error deleting user: {str(e)}"
 
 def create_user(user_data):
-    """Create a new user in the database using SQLAlchemy"""
+    """Create a new user in the database using SQLAlchemy with proper activity logging"""
     try:
         # Generate UUID for user
         user_id = str(uuid.uuid4())
@@ -182,23 +199,16 @@ def create_user(user_data):
                 'position': user_data.get('position', ''),
                 'email': user_data['email'],
                 'phone': user_data.get('phone', ''),
-                'photo_url': user_data.get('photo_url'),  # This saves the S3 URL to database
+                'photo_url': user_data.get('photo_url'),
                 'office_location': user_data.get('office_location', ''),
                 'biography': user_data.get('biography', ''),
                 'education_background': user_data.get('education_background', ''),
                 'working_experience': user_data.get('working_experience', '')
             })
         
-        # Log the activity
-        db.session.execute(text("""
-            INSERT INTO ActivityLog (UserID, Action, Timestamp)
-            VALUES (:user_id, :action, NOW())
-        """), {
-            'user_id': user_id,
-            'action': f"New user account created: {user_data['full_name']}"
-        })
+        # Log the activity with current timestamp
+        log_activity(user_id, f"New user account created: {user_data['full_name']}")
         
-        db.session.commit()
         return True, "User created successfully"
         
     except Exception as e:
@@ -246,7 +256,7 @@ def get_dashboard_stats():
         return None
 
 def get_recent_activities():
-    """Fetch recent activities from database using SQLAlchemy"""
+    """Fetch recent activities from database using SQLAlchemy with proper time handling"""
     try:
         # Get recent activities with user information
         query = text("""
@@ -255,7 +265,8 @@ def get_recent_activities():
                 al.Timestamp,
                 u.FullName,
                 r.RoleName,
-                u.UserID
+                u.UserID,
+                al.LogID
             FROM ActivityLog al
             LEFT JOIN User u ON al.UserID = u.UserID
             LEFT JOIN Role r ON u.RoleID = r.RoleID
@@ -267,44 +278,71 @@ def get_recent_activities():
         activities = []
         
         for row in result:
-            # Calculate time ago
-            time_diff = datetime.now() - row.Timestamp
-            if time_diff.days > 0:
-                time_ago = f"{time_diff.days} day{'s' if time_diff.days > 1 else ''} ago"
-            elif time_diff.seconds > 3600:
-                hours = time_diff.seconds // 3600
-                time_ago = f"{hours} hour{'s' if hours > 1 else ''} ago"
-            elif time_diff.seconds > 60:
-                minutes = time_diff.seconds // 60
-                time_ago = f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+            # Get current time for comparison
+            current_time = datetime.now()
+            activity_time = row.Timestamp
+            
+            # Calculate time difference more accurately
+            if activity_time:
+                time_diff = current_time - activity_time
+                total_seconds = int(time_diff.total_seconds())
+                
+                # Format time ago based on time difference
+                if time_diff.days > 365:
+                    years = time_diff.days // 365
+                    time_ago = f"{years} year{'s' if years > 1 else ''} ago"
+                elif time_diff.days > 30:
+                    months = time_diff.days // 30
+                    time_ago = f"{months} month{'s' if months > 1 else ''} ago"
+                elif time_diff.days > 7:
+                    weeks = time_diff.days // 7
+                    time_ago = f"{weeks} week{'s' if weeks > 1 else ''} ago"
+                elif time_diff.days > 0:
+                    time_ago = f"{time_diff.days} day{'s' if time_diff.days > 1 else ''} ago"
+                elif total_seconds > 3600:
+                    hours = total_seconds // 3600
+                    time_ago = f"{hours} hour{'s' if hours > 1 else ''} ago"
+                elif total_seconds > 60:
+                    minutes = total_seconds // 60
+                    time_ago = f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+                elif total_seconds > 0:
+                    time_ago = f"{total_seconds} second{'s' if total_seconds > 1 else ''} ago"
+                else:
+                    time_ago = "Just now"
             else:
-                time_ago = "Just now"
+                time_ago = "Unknown time"
+                activity_time = current_time
             
             # Determine status based on action type
             action_lower = row.Action.lower()
-            if 'created' in action_lower or 'added' in action_lower:
-                status = {'class': 'bg-success', 'text': 'Completed'}
-            elif 'updated' in action_lower or 'modified' in action_lower:
+            if any(word in action_lower for word in ['created', 'added', 'registered', 'new']):
+                status = {'class': 'bg-success', 'text': 'Created'}
+            elif any(word in action_lower for word in ['updated', 'modified', 'edited', 'changed']):
                 status = {'class': 'bg-info', 'text': 'Updated'}
-            elif 'deleted' in action_lower or 'removed' in action_lower:
-                status = {'class': 'bg-danger', 'text': 'Removed'}
+            elif any(word in action_lower for word in ['deleted', 'removed', 'archived']):
+                status = {'class': 'bg-danger', 'text': 'Deleted'}
+            elif any(word in action_lower for word in ['login', 'logged in', 'signed in']):
+                status = {'class': 'bg-primary', 'text': 'Login'}
+            elif any(word in action_lower for word in ['logout', 'logged out', 'signed out']):
+                status = {'class': 'bg-secondary', 'text': 'Logout'}
             else:
                 status = {'class': 'bg-secondary', 'text': 'Activity'}
             
             activities.append({
                 'action': row.Action,
-                'timestamp': row.Timestamp,
+                'timestamp': activity_time,
                 'user_name': row.FullName or 'System',
                 'role': row.RoleName or 'System',
                 'time_ago': time_ago,
-                'status': status
+                'status': status,
+                'formatted_date': activity_time.strftime('%Y-%m-%d %H:%M:%S') if activity_time else 'N/A'
             })
         
         return activities
         
     except Exception as e:
         current_app.logger.error(f"Error fetching recent activities: {e}")
-        return None
+        return []
 
 def get_faculties_with_expert_count():
     """Fetch all faculties with their expert count using SQLAlchemy"""
@@ -336,7 +374,7 @@ def get_faculties_with_expert_count():
         return []
 
 def delete_faculty(faculty_id):
-    """Delete a faculty from the database using SQLAlchemy"""
+    """Delete a faculty from the database using SQLAlchemy with proper activity logging"""
     try:
         # First check if faculty has any experts
         result = db.session.execute(text("""
@@ -365,19 +403,34 @@ def delete_faculty(faculty_id):
         if result.rowcount == 0:
             return False, "Faculty not found"
         
-        # Log the activity
-        db.session.execute(text("""
-            INSERT INTO ActivityLog (UserID, Action, Timestamp)
-            VALUES (:user_id, :action, NOW())
-        """), {'user_id': None, 'action': f"Faculty deleted: {faculty_name}"})
+        # Log the activity with current timestamp
+        log_activity(None, f"Faculty deleted: {faculty_name}")
         
-        db.session.commit()
         return True, f"Faculty '{faculty_name}' deleted successfully"
         
     except Exception as e:
         current_app.logger.error(f"Error deleting faculty: {e}")
         db.session.rollback()
         return False, f"Error deleting faculty: {str(e)}"
+
+def validate_image_file(file):
+    """Validate uploaded image file"""
+    allowed_types = ['image/jpeg', 'image/png', 'image/jpg']
+    max_size = 2 * 1024 * 1024  # 2MB
+
+    if file.content_type.lower() not in allowed_types:
+        return False, "Only JPG and PNG images are allowed."
+
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+
+    if size > max_size:
+        return False, "Image must be under 2MB."
+
+    return True, "Valid"
+
+# Route Handlers
 
 @admin.route('/manage-faculties')
 def manage_faculties():
@@ -420,22 +473,6 @@ def admin_dashboard():
         current_app.logger.error(f"Dashboard error: {e}")
         return render_template('admin/dashboard.html', 
                              database_error=f"Dashboard error: {str(e)}")
-
-def validate_image_file(file):
-    allowed_types = ['image/jpeg', 'image/png', 'image/jpg']
-    max_size = 2 * 1024 * 1024  # 2MB
-
-    if file.content_type.lower() not in allowed_types:
-        return False, "Only JPG and PNG images are allowed."
-
-    file.seek(0, os.SEEK_END)
-    size = file.tell()
-    file.seek(0)
-
-    if size > max_size:
-        return False, "Image must be under 2MB."
-
-    return True, "Valid"
 
 @admin.route('/add-user', methods=['GET', 'POST'])
 def add_user():

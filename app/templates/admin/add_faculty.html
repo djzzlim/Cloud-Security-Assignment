@@ -4,193 +4,175 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 bg-dark text-white min-vh-100">
-            <div class="p-3">
-                <h5 class="mb-4">
-                    <i class="fas fa-cog me-2"></i>
-                    Admin Panel
-                </h5>
-                <nav class="nav flex-column">
-                    <a class="nav-link text-white-50" href="{{ url_for('admin.admin_dashboard') }}">
-                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                    </a>
-                </nav>
+    <!-- Main Content - Full Width -->
+  <div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-building me-2 text-primary"></i>
+                    Add New Faculty
+                </h1>
+                <p class="text-muted mb-0">Create a new faculty department</p>
             </div>
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
         </div>
-
-        <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
-            <div class="p-4">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h1 class="h3 mb-0">
-                            <i class="fas fa-building me-2 text-primary"></i>
-                            Add New Faculty
-                        </h1>
-                        <p class="text-muted mb-0">Create a new faculty department</p>
-                    </div>
-                    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                    </a>
+    </div>
+</div>
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-4">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
                 </div>
+            {% endif %}
+        {% endwith %}
 
-                <!-- Flash Messages -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <div class="mb-4">
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
-                                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
-
-                <!-- Add Faculty Form -->
-                <div class="row justify-content-center">
-                    <div class="col-lg-8">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-primary text-white">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-building me-2"></i>
-                                    Faculty Information
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <form method="POST" novalidate>
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="mb-4">
-                                                <label for="faculty_name" class="form-label fw-medium">
-                                                    <i class="fas fa-building me-2 text-primary"></i>
-                                                    Faculty Name <span class="text-danger">*</span>
-                                                </label>
-                                                <input type="text" 
-                                                       class="form-control form-control-lg" 
-                                                       id="faculty_name" 
-                                                       name="faculty_name" 
-                                                       placeholder="e.g., Faculty of Computing and Informatics"
-                                                       required>
-                                                <div class="form-text">
-                                                    <i class="fas fa-info-circle me-1"></i>
-                                                    Enter the full name of the faculty department
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Example Faculties -->
+        <!-- Add Faculty Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-building me-2"></i>
+                            Faculty Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" novalidate>
+                            <div class="row">
+                                <div class="col-md-12">
                                     <div class="mb-4">
-                                        <h6 class="text-muted mb-3">
-                                            <i class="fas fa-lightbulb me-2"></i>
-                                            Common Faculty Examples:
-                                        </h6>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <ul class="list-unstyled">
-                                                    <li class="mb-2">
-                                                        <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
-                                                                data-name="Faculty of Engineering">
-                                                            <i class="fas fa-cogs me-2 text-warning"></i>
-                                                            Faculty of Engineering
-                                                        </button>
-                                                    </li>
-                                                    <li class="mb-2">
-                                                        <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
-                                                                data-name="Faculty of Medicine">
-                                                            <i class="fas fa-stethoscope me-2 text-danger"></i>
-                                                            Faculty of Medicine
-                                                        </button>
-                                                    </li>
-                                                    <li class="mb-2">
-                                                        <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
-                                                                data-name="Faculty of Business Administration">
-                                                            <i class="fas fa-briefcase me-2 text-success"></i>
-                                                            Faculty of Business Administration
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <ul class="list-unstyled">
-                                                    <li class="mb-2">
-                                                        <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
-                                                                data-name="Faculty of Science">
-                                                            <i class="fas fa-flask me-2 text-info"></i>
-                                                            Faculty of Science
-                                                        </button>
-                                                    </li>
-                                                    <li class="mb-2">
-                                                        <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
-                                                                data-name="Faculty of Arts and Social Sciences">
-                                                            <i class="fas fa-palette me-2 text-purple"></i>
-                                                            Faculty of Arts and Social Sciences
-                                                        </button>
-                                                    </li>
-                                                    <li class="mb-2">
-                                                        <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
-                                                                data-name="Faculty of Education">
-                                                            <i class="fas fa-graduation-cap me-2 text-secondary"></i>
-                                                            Faculty of Education
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </div>
+                                        <label for="faculty_name" class="form-label fw-medium">
+                                            <i class="fas fa-building me-2 text-primary"></i>
+                                            Faculty Name <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" 
+                                               class="form-control form-control-lg" 
+                                               id="faculty_name" 
+                                               name="faculty_name" 
+                                               placeholder="e.g., Faculty of Computing and Informatics"
+                                               required>
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Enter the full name of the faculty department
                                         </div>
                                     </div>
-
-                                    <!-- Form Actions -->
-                                    <div class="d-flex justify-content-between pt-3 border-top">
-                                        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
-                                            <i class="fas fa-times me-2"></i>Cancel
-                                        </a>
-                                        <button type="submit" class="btn btn-primary btn-lg px-4">
-                                            <i class="fas fa-plus me-2"></i>Create Faculty
-                                        </button>
-                                    </div>
-                                </form>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Tips Card -->
-                        <div class="card border-0 shadow-sm mt-4">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0">
-                                    <i class="fas fa-lightbulb me-2 text-info"></i>
-                                    Tips for Adding Faculties
+                            <!-- Example Faculties -->
+                            <div class="mb-4">
+                                <h6 class="text-muted mb-3">
+                                    <i class="fas fa-lightbulb me-2"></i>
+                                    Common Faculty Examples:
                                 </h6>
-                            </div>
-                            <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h6 class="text-success">
-                                            <i class="fas fa-check-circle me-2"></i>Best Practices:
-                                        </h6>
-                                        <ul class="small text-muted">
-                                            <li>Use official faculty names</li>
-                                            <li>Check for existing similar faculties</li>
-                                            <li>Use consistent naming conventions</li>
-                                            <li>Include "Faculty of" prefix when appropriate</li>
+                                        <ul class="list-unstyled">
+                                            <li class="mb-2">
+                                                <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
+                                                        data-name="Faculty of Engineering">
+                                                    <i class="fas fa-cogs me-2 text-warning"></i>
+                                                    Faculty of Engineering
+                                                </button>
+                                            </li>
+                                            <li class="mb-2">
+                                                <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
+                                                        data-name="Faculty of Medicine">
+                                                    <i class="fas fa-stethoscope me-2 text-danger"></i>
+                                                    Faculty of Medicine
+                                                </button>
+                                            </li>
+                                            <li class="mb-2">
+                                                <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
+                                                        data-name="Faculty of Business Administration">
+                                                    <i class="fas fa-briefcase me-2 text-success"></i>
+                                                    Faculty of Business Administration
+                                                </button>
+                                            </li>
                                         </ul>
                                     </div>
                                     <div class="col-md-6">
-                                        <h6 class="text-warning">
-                                            <i class="fas fa-exclamation-triangle me-2"></i>Important Notes:
-                                        </h6>
-                                        <ul class="small text-muted">
-                                            <li>Faculty names must be unique</li>
-                                            <li>Once created, faculties can be assigned to experts</li>
-                                            <li>Deletion requires no associated experts</li>
-                                            <li>Changes affect all related expert profiles</li>
+                                        <ul class="list-unstyled">
+                                            <li class="mb-2">
+                                                <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
+                                                        data-name="Faculty of Science">
+                                                    <i class="fas fa-flask me-2 text-info"></i>
+                                                    Faculty of Science
+                                                </button>
+                                            </li>
+                                            <li class="mb-2">
+                                                <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
+                                                        data-name="Faculty of Arts and Social Sciences">
+                                                    <i class="fas fa-palette me-2 text-purple"></i>
+                                                    Faculty of Arts and Social Sciences
+                                                </button>
+                                            </li>
+                                            <li class="mb-2">
+                                                <button type="button" class="btn btn-outline-light btn-sm text-start w-100 faculty-example" 
+                                                        data-name="Faculty of Education">
+                                                    <i class="fas fa-graduation-cap me-2 text-secondary"></i>
+                                                    Faculty of Education
+                                                </button>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="d-flex justify-content-between pt-3 border-top">
+                                <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary btn-lg px-4">
+                                    <i class="fas fa-plus me-2"></i>Create Faculty
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tips Card -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">
+                            <i class="fas fa-lightbulb me-2 text-info"></i>
+                            Tips for Adding Faculties
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-success">
+                                    <i class="fas fa-check-circle me-2"></i>Best Practices:
+                                </h6>
+                                <ul class="small text-muted">
+                                    <li>Use official faculty names</li>
+                                    <li>Check for existing similar faculties</li>
+                                    <li>Use consistent naming conventions</li>
+                                    <li>Include "Faculty of" prefix when appropriate</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Important Notes:
+                                </h6>
+                                <ul class="small text-muted">
+                                    <li>Faculty names must be unique</li>
+                                    <li>Once created, faculties can be assigned to experts</li>
+                                    <li>Deletion requires no associated experts</li>
+                                    <li>Changes affect all related expert profiles</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -201,15 +183,6 @@
 </div>
 
 <style>
-.min-vh-100 {
-    min-height: 100vh !important;
-}
-
-.nav-link.active {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 5px;
-}
-
 .faculty-example {
     border: 1px solid #e9ecef;
     color: #495057;
