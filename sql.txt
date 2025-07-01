@@ -1,0 +1,149 @@
+-- Drop existing tables in the correct order due to foreign key constraints
+DROP TABLE IF EXISTS ExpertPublicationRelation;
+DROP TABLE IF EXISTS ActivityLog;
+DROP TABLE IF EXISTS Publication;
+DROP TABLE IF EXISTS Expert;
+DROP TABLE IF EXISTS Faculty;
+DROP TABLE IF EXISTS `User`;
+DROP TABLE IF EXISTS Role;
+
+-- Role Table
+CREATE TABLE Role (
+    RoleID INT AUTO_INCREMENT PRIMARY KEY,
+    RoleName VARCHAR(100) NOT NULL
+);
+
+-- User Table
+CREATE TABLE `User` (
+    UserID CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    FullName VARCHAR(200) NOT NULL,
+    PasswordHash VARCHAR(255),
+    Email VARCHAR(200) NOT NULL UNIQUE,
+    RoleID INT,
+    FOREIGN KEY (RoleID) REFERENCES Role(RoleID) ON DELETE SET NULL
+);
+
+-- Faculty Table
+CREATE TABLE Faculty (
+    FacultyID INT AUTO_INCREMENT PRIMARY KEY,
+    FacultyName VARCHAR(200) NOT NULL
+);
+
+-- Expert Table
+CREATE TABLE Expert (
+    ExpertID CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    UserID CHAR(36) UNIQUE,
+    FacultyID INT,
+    FullName VARCHAR(200) NOT NULL,
+    Title VARCHAR(100),
+    Position VARCHAR(100),
+    Email VARCHAR(200),
+    Phone VARCHAR(50),
+    PhotoURL VARCHAR(300),
+    OfficeLocation VARCHAR(200),
+    Biography TEXT,
+    EducationBackground TEXT,
+    WorkingExperience TEXT,
+    FOREIGN KEY (UserID) REFERENCES `User`(UserID) ON DELETE CASCADE,
+    FOREIGN KEY (FacultyID) REFERENCES Faculty(FacultyID) ON DELETE SET NULL
+);
+
+-- Publication Table
+CREATE TABLE Publication (
+    PublicationID INT AUTO_INCREMENT PRIMARY KEY,
+    Title VARCHAR(300) NOT NULL,
+    Year CHAR(4) NOT NULL,
+    Venue VARCHAR(300) NOT NULL
+);
+
+-- ExpertPublicationRelation Table
+CREATE TABLE ExpertPublicationRelation (
+    RelationID INT AUTO_INCREMENT PRIMARY KEY,
+    ExpertID CHAR(36),
+    PublicationID INT,
+    FOREIGN KEY (ExpertID) REFERENCES Expert(ExpertID) ON DELETE CASCADE,
+    FOREIGN KEY (PublicationID) REFERENCES Publication(PublicationID) ON DELETE CASCADE
+);
+
+-- ActivityLog Table
+CREATE TABLE ActivityLog (
+    LogID INT AUTO_INCREMENT PRIMARY KEY,
+    UserID CHAR(36),
+    Action VARCHAR(255) NOT NULL,
+    Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (UserID) REFERENCES `User`(UserID) ON DELETE CASCADE
+);
+
+-- Insert Roles
+INSERT INTO Role (RoleName) VALUES
+('Administrator'),
+('Expert');
+
+-- Insert Faculty
+INSERT INTO Faculty (FacultyName)
+VALUES ('Faculty of Computing and Informatics');
+
+-- Declare UUIDs for user and expert
+SET @UserID := UUID();
+SET @ExpertID := UUID();
+
+-- Insert User (Expert)
+INSERT INTO `User` (UserID, FullName, PasswordHash, Email, RoleID)
+VALUES (
+    @UserID,
+    'Dr. Aisyah Ahmad',
+    'user123',
+    'aisyah@university.edu',
+    2
+);
+
+-- Insert User (Admin)
+INSERT INTO `User` (UserID, FullName, PasswordHash, Email, RoleID)
+VALUES (
+    UUID(),
+    'Admin John',
+    'admin123',
+    'admin@university.edu',
+    1
+);
+
+-- Insert Expert
+INSERT INTO Expert (
+    ExpertID, UserID, FacultyID, FullName, Title, Position,
+    Email, Phone, PhotoURL, OfficeLocation,
+    Biography, EducationBackground, WorkingExperience
+)
+VALUES (
+    @ExpertID, @UserID, 1, 'Dr. Aisyah Ahmad', 'Associate Professor', 'Senior Lecturer',
+    'aisyah@university.edu', '0123456789',
+    'http://university.edu/photos/aisyah.jpg', 'FCI 3-10',
+    'Dr. Aisyah Ahmad specializes in Artificial Intelligence and Machine Learning. Her research focuses on deep learning models for real-world applications, including medical imaging and natural language processing.',
+    '• Ph.D. in Artificial Intelligence, University of Tokyo, Japan (2015–2019)
+• M.Sc. in Computer Science, Universiti Malaya, Malaysia (2012–2014)
+• B.Sc. in Software Engineering, Universiti Teknologi Malaysia (2008–2012)',
+    '• Associate Professor, Faculty of Computing and Informatics, University XYZ (2021–Present)
+• Senior Lecturer, School of Computer Science, Universiti ABC (2016–2021)
+• Postdoctoral Research Fellow, University of Tokyo (2019–2020)
+• Research Assistant, AI Lab, Universiti Malaya (2012–2014)
+• Consultant, Data Analytics Project for Ministry of Health Malaysia (2021)'
+);
+
+-- Insert Publication
+INSERT INTO Publication (Title, Year, Venue)
+VALUES ('Deep Learning in Practice', '2024', 'IEEE Transactions on Medical Imaging');
+
+-- Insert Expert-Publication Relation
+INSERT INTO ExpertPublicationRelation (ExpertID, PublicationID)
+VALUES (@ExpertID, 1);
+
+-- Insert Activity Log
+INSERT INTO ActivityLog (UserID, Action)
+VALUES (@UserID, 'User created and assigned Expert profile');
+
+-- Hash the admin password
+UPDATE User SET PasswordHash = SHA2('admin123', 256) WHERE Email = 'admin@university.edu';
+
+-- Hash the user password  
+UPDATE User SET PasswordHash = SHA2('user123', 256) WHERE Email = 'aisyah@university.edu';
+
+
