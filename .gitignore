@@ -6,4 +6,4 @@ aws
 venv
 venv/*
 *.hcl
-*.tfstate
+*.tfstate.terraform/
