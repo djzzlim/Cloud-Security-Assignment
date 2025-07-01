@@ -1,0 +1,42 @@
+[
+    {
+        "ENI": "eni-02311aaa2c5a83a9b",
+        "PublicIp": null,
+        "Status": "in-use"
+    },
+    {
+        "ENI": "eni-017b8510773cd53f9",
+        "PublicIp": null,
+        "Status": "in-use"
+    },
+    {
+        "ENI": "eni-00fed2f2bafccdfc0",
+        "PublicIp": null,
+        "Status": "in-use"
+    },
+    {
+        "ENI": "eni-07e83e060b418f612",
+        "PublicIp": null,
+        "Status": "in-use"
+    },
+    {
+        "ENI": "eni-0dd8cfec9b0c50f9f",
+        "PublicIp": null,
+        "Status": "in-use"
+    },
+    {
+        "ENI": "eni-008f139eb35b6df97",
+        "PublicIp": null,
+        "Status": "in-use"
+    },
+    {
+        "ENI": "eni-03ed33f5619c7e9c1",
+        "PublicIp": "34.232.27.162",
+        "Status": "in-use"
+    },
+    {
+        "ENI": "eni-0e1d262d295489e83",
+        "PublicIp": null,
+        "Status": "in-use"
+    }
+]

@@ -121,9 +121,15 @@
                             </div>
                             {% endif %}
                             <div class="mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ user.id }}', '{{ user.full_name }}')">
-                                    <i class="fas fa-trash me-1"></i>Delete
-                                </button>
+                                {% if user.role == 'Administrator' %}
+                                    <button type="button" class="btn btn-sm btn-secondary" disabled title="System administrator cannot be deleted">
+                                        <i class="fas fa-shield-alt me-1"></i>Cannot Delete
+                                    </button>
+                                {% else %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ user.id }}', '{{ user.full_name }}')">
+                                        <i class="fas fa-trash me-1"></i>Delete
+                                    </button>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
@@ -187,9 +193,15 @@
                                             </div>
                                         </td>
                                         <td class="px-3 py-2 text-center">
-                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ user.id }}', '{{ user.full_name }}')">
-                                                <i class="fas fa-trash me-1"></i>Delete
-                                            </button>
+                                            {% if user.role == 'Administrator' %}
+                                                <button type="button" class="btn btn-sm btn-secondary" disabled title="System administrator cannot be deleted">
+                                                    <i class="fas fa-shield-alt me-1"></i>Cannot Delete
+                                                </button>
+                                            {% else %}
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ user.id }}', '{{ user.full_name }}')">
+                                                    <i class="fas fa-trash me-1"></i>Delete
+                                                </button>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -318,6 +330,21 @@
 
 .min-width-0 {
     min-width: 0;
+}
+
+/* Protected admin button styling */
+.btn-secondary[disabled] {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.btn-secondary[disabled]:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
 }
 
 /* Responsive adjustments */
