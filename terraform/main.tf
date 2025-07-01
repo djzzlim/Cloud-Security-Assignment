@@ -1,3 +1,4 @@
+#ok
 # Configure Docker provider
 terraform {
   required_providers {
@@ -941,127 +942,266 @@ resource "aws_db_instance" "main" {
   deletion_protection = false
   
   performance_insights_enabled = false
-
+  
   tags = {
     Name        = "${var.app_name}-database"
     Environment = var.environment
   }
 }
 
-resource "aws_wafv2_web_acl" "main" {
-  name        = "${var.app_name}-web-acl"
-  description = "Web ACL for application layer protection"
-  scope       = "REGIONAL"
+# CloudWatch Monitoring for Fargate and ALB
 
-  default_action {
-    allow {}
-  }
-
-  visibility_config {
-    cloudwatch_metrics_enabled = true
-    metric_name                = "${var.app_name}-web-acl-metrics"
-    sampled_requests_enabled   = true
-  }
-
-  # Add managed rules from AWS Marketplace (OWASP Top 10 protection)
-  rule {
-    name     = "AWSManagedRulesCommonRuleSet"
-    priority = 0
-
-    override_action {
-      none {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesCommonRuleSet"
-        vendor_name = "AWS"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesCommonRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesSQLiRuleSet"
-    priority = 1
-
-    override_action {
-      none {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesSQLiRuleSet"
-        vendor_name = "AWS"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesSQLiRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesKnownBadInputsRuleSet"
-    priority = 2
-
-    override_action {
-      none {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesKnownBadInputsRuleSet"
-        vendor_name = "AWS"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesKnownBadInputsRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesLinuxRuleSet"
-    priority = 3
-
-    override_action {
-      none {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesLinuxRuleSet"
-        vendor_name = "AWS"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesLinuxRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
+# SNS Topic for Alerts (if email is provided)
+resource "aws_sns_topic" "alerts" {
+  count = var.alert_email != "" ? 1 : 0
+  name  = "${var.app_name}-alerts"
 
   tags = {
+    Name        = "${var.app_name}-alerts"
     Environment = var.environment
-    Application = var.app_name
   }
 }
 
-# Associate WAF Web ACL with ALB
-resource "aws_wafv2_web_acl_association" "main" {
-  resource_arn = aws_lb.main_alb.arn
-  web_acl_arn  = aws_wafv2_web_acl.main.arn
+# SNS Topic Subscription for Email Alerts
+resource "aws_sns_topic_subscription" "email_alerts" {
+  count     = var.alert_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.alerts[0].arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+# CloudWatch Alarms for ALB
+
+# ALB - High Response Time
+resource "aws_cloudwatch_metric_alarm" "alb_response_time" {
+  alarm_name          = "${var.app_name}-alb-high-response-time"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "TargetResponseTime"
+  namespace           = "AWS/ApplicationELB"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "5"
+  alarm_description   = "This metric monitors ALB response time"
+  alarm_actions       = var.alert_email != "" ? [aws_sns_topic.alerts[0].arn] : []
+
+  dimensions = {
+    LoadBalancer = aws_lb.main_alb.arn_suffix
+  }
+
+  tags = {
+    Name        = "${var.app_name}-alb-response-time-alarm"
+    Environment = var.environment
+  }
+}
+
+# ALB - High Error Rate (5xx)
+resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
+  alarm_name          = "${var.app_name}-alb-5xx-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "HTTPCode_ELB_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "10"
+  alarm_description   = "This metric monitors ALB 5xx errors"
+  alarm_actions       = var.alert_email != "" ? [aws_sns_topic.alerts[0].arn] : []
+
+  dimensions = {
+    LoadBalancer = aws_lb.main_alb.arn_suffix
+  }
+
+  tags = {
+    Name        = "${var.app_name}-alb-5xx-errors-alarm"
+    Environment = var.environment
+  }
+}
+
+# ALB - Unhealthy Targets
+resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_targets" {
+  alarm_name          = "${var.app_name}-alb-unhealthy-targets"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "UnHealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "0"
+  alarm_description   = "This metric monitors unhealthy targets"
+  alarm_actions       = var.alert_email != "" ? [aws_sns_topic.alerts[0].arn] : []
+
+  dimensions = {
+    TargetGroup  = aws_lb_target_group.ecs_tg.arn_suffix
+    LoadBalancer = aws_lb.main_alb.arn_suffix
+  }
+
+  tags = {
+    Name        = "${var.app_name}-alb-unhealthy-targets-alarm"
+    Environment = var.environment
+  }
+}
+
+# CloudWatch Alarms for ECS Fargate
+
+# ECS - High CPU Utilization
+resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
+  alarm_name          = "${var.app_name}-ecs-cpu-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "This metric monitors ECS CPU utilization"
+  alarm_actions       = var.alert_email != "" ? [aws_sns_topic.alerts[0].arn] : []
+
+  dimensions = {
+    ServiceName = aws_ecs_service.main.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+
+  tags = {
+    Name        = "${var.app_name}-ecs-cpu-high-alarm"
+    Environment = var.environment
+  }
+}
+
+# ECS - High Memory Utilization
+resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
+  alarm_name          = "${var.app_name}-ecs-memory-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "MemoryUtilization"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "85"
+  alarm_description   = "This metric monitors ECS memory utilization"
+  alarm_actions       = var.alert_email != "" ? [aws_sns_topic.alerts[0].arn] : []
+
+  dimensions = {
+    ServiceName = aws_ecs_service.main.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+
+  tags = {
+    Name        = "${var.app_name}-ecs-memory-high-alarm"
+    Environment = var.environment
+  }
+}
+
+# ECS - Service Running Task Count
+resource "aws_cloudwatch_metric_alarm" "ecs_running_tasks_low" {
+  alarm_name          = "${var.app_name}-ecs-running-tasks-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "RunningTaskCount"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "1"
+  alarm_description   = "This metric monitors ECS running task count"
+  alarm_actions       = var.alert_email != "" ? [aws_sns_topic.alerts[0].arn] : []
+
+  dimensions = {
+    ServiceName = aws_ecs_service.main.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+
+  tags = {
+    Name        = "${var.app_name}-ecs-running-tasks-low-alarm"
+    Environment = var.environment
+  }
+}
+
+# Simple CloudWatch Dashboard
+resource "aws_cloudwatch_dashboard" "main" {
+  dashboard_name = "${var.app_name}-monitoring-dashboard"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.main_alb.arn_suffix],
+            [".", "TargetResponseTime", ".", "."],
+            [".", "HTTPCode_Target_2XX_Count", ".", "."],
+            [".", "HTTPCode_ELB_5XX_Count", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "ALB Metrics"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", aws_lb_target_group.ecs_tg.arn_suffix],
+            [".", "UnHealthyHostCount", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Target Health"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ECS", "CPUUtilization", "ServiceName", aws_ecs_service.main.name, "ClusterName", aws_ecs_cluster.main.name],
+            [".", "MemoryUtilization", ".", ".", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "ECS Resource Utilization"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ECS", "RunningTaskCount", "ServiceName", aws_ecs_service.main.name, "ClusterName", aws_ecs_cluster.main.name],
+            [".", "PendingTaskCount", ".", ".", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "ECS Task Counts"
+          period  = 300
+        }
+      }
+    ]
+  })
 }
 
 # Outputs
@@ -1126,4 +1266,31 @@ output "rds_connection_info" {
     port     = aws_db_instance.main.port
   }
   sensitive = true
+}
+
+# Outputs for monitoring
+output "cloudwatch_dashboard_url" {
+  description = "URL to the CloudWatch dashboard"
+  value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${aws_cloudwatch_dashboard.main.dashboard_name}"
+}
+
+output "sns_topic_arn" {
+  description = "SNS topic ARN for alerts"
+  value       = var.alert_email != "" ? aws_sns_topic.alerts[0].arn : "No email provided - alerts disabled"
+}
+
+output "monitoring_info" {
+  description = "Monitoring setup information"
+  value = {
+    dashboard_name = aws_cloudwatch_dashboard.main.dashboard_name
+    alarms_created = [
+      aws_cloudwatch_metric_alarm.alb_response_time.alarm_name,
+      aws_cloudwatch_metric_alarm.alb_5xx_errors.alarm_name,
+      aws_cloudwatch_metric_alarm.alb_unhealthy_targets.alarm_name,
+      aws_cloudwatch_metric_alarm.ecs_cpu_high.alarm_name,
+      aws_cloudwatch_metric_alarm.ecs_memory_high.alarm_name,
+      aws_cloudwatch_metric_alarm.ecs_running_tasks_low.alarm_name
+    ]
+    email_alerts = var.alert_email != "" ? "Enabled" : "Disabled (no email provided)"
+  }
 }
