@@ -1,3 +1,5 @@
+#no waf ok
+
 #ok
 # Configure Docker provider
 terraform {
@@ -63,6 +65,18 @@ variable "s3_bucket_name" {
   default     = "my-app-bucket-kjshjh"
 }
 
+variable "create_admin_user" {
+  description = "Whether to create an admin IAM user with full access"
+  type        = bool
+  default     = true
+}
+
+variable "create_iam_user" {
+  description = "Whether to create an IAM user for console and programmatic access"
+  type        = bool
+  default     = true
+}
+
 provider "aws" {
   region = var.aws_region
 }
@@ -81,7 +95,7 @@ data "aws_ecr_authorization_token" "token" {
   registry_id = data.aws_caller_identity.current.account_id
 }
 
-# Data sources
+# Data sources (ONLY ONE INSTANCE)
 data "aws_caller_identity" "current" {}
 
 data "aws_ami" "amazon_linux" {
@@ -443,9 +457,16 @@ resource "aws_iam_role_policy_attachment" "ecs_task_ssm_policy" {
 # S3 Bucket for application storage (PUBLIC ACCESS)
 resource "aws_s3_bucket" "app_bucket" {
   bucket = var.s3_bucket_name
+  
+  # Add this line to force delete bucket with all objects
+  force_destroy = true
 
   tags = {
     Name = "my-app-bucket"
+  }
+
+  lifecycle {
+    prevent_destroy = false
   }
 }
 
@@ -1116,10 +1137,289 @@ resource "aws_cloudwatch_metric_alarm" "ecs_running_tasks_low" {
   }
 }
 
-# Simple CloudWatch Dashboard
-resource "aws_cloudwatch_dashboard" "main" {
-  dashboard_name = "${var.app_name}-monitoring-dashboard"
+# AWS WAF v2 Web ACL
+resource "aws_wafv2_web_acl" "main" {
+  name  = "${var.app_name}-web-acl"
+  scope = "REGIONAL"
 
+  default_action {
+    allow {}
+  }
+
+  # Rule 1: AWS Managed Core Rule Set (with overrides for common false positives)
+  rule {
+    name     = "AWSManagedRulesCommonRuleSet"
+    priority = 1
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+
+        # Override rules that commonly cause false positives for web applications
+        rule_action_override {
+          action_to_use {
+            count {} # Count instead of block for testing
+          }
+          name = "SizeRestrictions_BODY"
+        }
+
+        rule_action_override {
+          action_to_use {
+            count {} # Count instead of block for file uploads
+          }
+          name = "GenericRFI_BODY"
+        }
+
+        rule_action_override {
+          action_to_use {
+            count {} # Count instead of block for form submissions
+          }
+          name = "CrossSiteScripting_BODY"
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "CommonRuleSetMetric"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # Rule 2: Known Bad Inputs (less likely to cause false positives)
+  rule {
+    name     = "AWSManagedRulesKnownBadInputsRuleSet"
+    priority = 2
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "KnownBadInputsRuleSetMetric"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # Rule 3: Amazon IP Reputation List
+  rule {
+    name     = "AWSManagedRulesAmazonIpReputationList"
+    priority = 3
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesAmazonIpReputationList"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AmazonIpReputationListMetric"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # Rule 4: Rate limiting to prevent abuse (adjust rate as needed)
+  rule {
+    name     = "RateLimitRule"
+    priority = 4
+
+    action {
+      block {}
+    }
+
+    statement {
+      rate_based_statement {
+        limit              = 2000 # Requests per 5-minute window per IP
+        aggregate_key_type = "IP"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "RateLimitRuleMetric"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # Rule 5: Allow specific paths that might be blocked (customize as needed)
+  rule {
+    name     = "AllowSpecificPaths"
+    priority = 0 # Higher priority (lower number) = evaluated first
+
+    action {
+      allow {}
+    }
+
+    statement {
+      or_statement {
+        statement {
+          byte_match_statement {
+            search_string = "/upload"
+            field_to_match {
+              uri_path {}
+            }
+            text_transformation {
+              priority = 0
+              type     = "LOWERCASE"
+            }
+            positional_constraint = "STARTS_WITH"
+          }
+        }
+        statement {
+          byte_match_statement {
+            search_string = "/api/"
+            field_to_match {
+              uri_path {}
+            }
+            text_transformation {
+              priority = 0
+              type     = "LOWERCASE"
+            }
+            positional_constraint = "STARTS_WITH"
+          }
+        }
+        statement {
+          byte_match_statement {
+            search_string = "/health"
+            field_to_match {
+              uri_path {}
+            }
+            text_transformation {
+              priority = 0
+              type     = "LOWERCASE"
+            }
+            positional_constraint = "EXACTLY"
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AllowSpecificPathsMetric"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  tags = {
+    Name        = "${var.app_name}-web-acl"
+    Environment = var.environment
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${var.app_name}WebAcl"
+    sampled_requests_enabled   = true
+  }
+}
+
+# Associate WAF with ALB
+resource "aws_wafv2_web_acl_association" "main" {
+  resource_arn = aws_lb.main_alb.arn
+  web_acl_arn  = aws_wafv2_web_acl.main.arn
+}
+
+# CloudWatch Log Group for WAF
+resource "aws_cloudwatch_log_group" "waf_logs" {
+  name              = "/aws/wafv2/${var.app_name}"
+  retention_in_days = 14
+
+  tags = {
+    Name        = "${var.app_name}-waf-logs"
+    Environment = var.environment
+  }
+}
+
+# WAF Logging Configuration
+resource "aws_cloudwatch_log_resource_policy" "waf_logs_policy" {
+  policy_name = "AWSWAFLoggingPolicy"
+  policy_document = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid    = "AWSWAFLogs",
+        Effect = "Allow",
+        Principal = {
+          Service = "delivery.logs.amazonaws.com"
+        },
+        Action = "logs:PutLogEvents",
+        Resource = "${aws_cloudwatch_log_group.waf_logs.arn}:*"
+      }
+    ]
+  })
+}
+
+# WAF CloudWatch Alarms
+resource "aws_cloudwatch_metric_alarm" "waf_blocked_requests" {
+  count               = var.alert_email != "" ? 1 : 0
+  alarm_name          = "${var.app_name}-waf-blocked-requests"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "BlockedRequests"
+  namespace           = "AWS/WAFV2"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "100"
+  alarm_description   = "High number of requests blocked by WAF"
+  alarm_actions       = [aws_sns_topic.alerts[0].arn]
+
+  dimensions = {
+    WebACL = aws_wafv2_web_acl.main.name
+    Region = var.aws_region
+  }
+
+  tags = {
+    Name        = "${var.app_name}-waf-blocked-requests-alarm"
+    Environment = var.environment
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "waf_rate_limit_triggered" {
+  count               = var.alert_email != "" ? 1 : 0
+  alarm_name          = "${var.app_name}-waf-rate-limit"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "RateLimitRuleMetric"
+  namespace           = "AWS/WAFV2"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "10"
+  alarm_description   = "Rate limiting is being triggered frequently"
+  alarm_actions       = [aws_sns_topic.alerts[0].arn]
+
+  dimensions = {
+    WebACL = aws_wafv2_web_acl.main.name
+    Region = var.aws_region
+  }
+
+  tags = {
+    Name        = "${var.app_name}-waf-rate-limit-alarm"
+    Environment = var.environment
+  }
+}
+
+# Update the main CloudWatch dashboard to include WAF metrics
+resource "aws_cloudwatch_dashboard" "main" {
+  dashboard_name = "your-dashboard-name"
   dashboard_body = jsonencode({
     widgets = [
       {
@@ -1199,9 +1499,253 @@ resource "aws_cloudwatch_dashboard" "main" {
           title   = "ECS Task Counts"
           period  = 300
         }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 12
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/WAFV2", "AllowedRequests", "WebACL", aws_wafv2_web_acl.main.name, "Region", var.aws_region],
+            [".", "BlockedRequests", ".", ".", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "WAF Request Metrics"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 12
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/WAFV2", "CommonRuleSetMetric", "WebACL", aws_wafv2_web_acl.main.name, "Region", var.aws_region],
+            [".", "RateLimitRuleMetric", ".", ".", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "WAF Rule Metrics"
+          period  = 300
+        }
       }
     ]
   })
+}
+
+# Admin IAM User with full administrative access
+resource "aws_iam_user" "admin_user" {
+  count = var.create_admin_user ? 1 : 0
+  name  = "${var.app_name}-admin-user"
+  path  = "/"
+
+  tags = {
+    Name        = "${var.app_name}-admin-user"
+    Environment = var.environment
+    Role        = "Administrator"
+  }
+}
+
+# IAM User for Console Access (optional)
+resource "aws_iam_user" "console_user" {
+  count = var.create_iam_user ? 1 : 0
+  name  = "${var.app_name}-console-user"
+  path  = "/"
+
+  tags = {
+    Name        = "${var.app_name}-console-user"
+    Environment = var.environment
+  }
+}
+
+# Admin User Login Profile for Console Access
+resource "aws_iam_user_login_profile" "admin_user_profile" {
+  count           = var.create_admin_user ? 1 : 0
+  user            = aws_iam_user.admin_user[0].name
+  password_length = 20
+
+  # Force user to change password on first login
+  password_reset_required = true
+
+  lifecycle {
+    ignore_changes = [password_reset_required]
+  }
+}
+
+# Admin User Access Key for Programmatic Access
+resource "aws_iam_access_key" "admin_user_key" {
+  count = var.create_admin_user ? 1 : 0
+  user  = aws_iam_user.admin_user[0].name
+}
+
+# Attach AdministratorAccess policy to admin user
+resource "aws_iam_user_policy_attachment" "admin_user_policy" {
+  count      = var.create_admin_user ? 1 : 0
+  user       = aws_iam_user.admin_user[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# IAM User Login Profile for Console Access
+resource "aws_iam_user_login_profile" "console_user_profile" {
+  count           = var.create_iam_user ? 1 : 0
+  user            = aws_iam_user.console_user[0].name
+  password_length = 20
+
+  # Force user to change password on first login
+  password_reset_required = true
+
+  lifecycle {
+    ignore_changes = [password_reset_required]
+  }
+}
+
+# IAM Access Key for Programmatic Access
+resource "aws_iam_access_key" "console_user_key" {
+  count = var.create_iam_user ? 1 : 0
+  user  = aws_iam_user.console_user[0].name
+}
+
+# IAM Policy for application management (developer)
+resource "aws_iam_policy" "app_management_policy" {
+  count = var.create_iam_user ? 1 : 0
+  name  = "${var.app_name}-management-policy"
+  path  = "/"
+  
+  description = "Policy for managing application resources"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      # IAM Self-Service permissions
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:ChangePassword",
+          "iam:GetAccountPasswordPolicy",
+          "iam:GetLoginProfile"
+        ]
+        Resource = "*"
+      },
+      # ECS permissions
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:*",
+          "ecr:*"
+        ]
+        Resource = "*"
+      },
+      # CloudWatch permissions
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:*",
+          "logs:*"
+        ]
+        Resource = "*"
+      },
+      # Load Balancer permissions
+      {
+        Effect = "Allow"
+        Action = [
+          "elasticloadbalancing:*"
+        ]
+        Resource = "*"
+      },
+      # RDS permissions
+      {
+        Effect = "Allow"
+        Action = [
+          "rds:Describe*",
+          "rds:ListTagsForResource",
+          "rds:ModifyDBInstance",
+          "rds:RebootDBInstance"
+        ]
+        Resource = "*"
+      },
+      # S3 permissions
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:*"
+        ]
+        Resource = [
+          aws_s3_bucket.app_bucket.arn,
+          "${aws_s3_bucket.app_bucket.arn}/*"
+        ]
+      },
+      # Systems Manager (for ECS Exec and EC2 SSM)
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:*",
+          "ssmmessages:*",
+          "ec2messages:*"
+        ]
+        Resource = "*"
+      },
+      # EC2 permissions (for SSM access to DB admin instance)
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances",
+          "ec2:DescribeInstanceStatus"
+        ]
+        Resource = "*"
+      },
+      # WAF permissions
+      {
+        Effect = "Allow"
+        Action = [
+          "wafv2:GetWebACL",
+          "wafv2:GetSampledRequests",
+          "wafv2:ListWebACLs"
+        ]
+        Resource = "*"
+      },
+      # Auto Scaling permissions
+      {
+        Effect = "Allow"
+        Action = [
+          "application-autoscaling:*"
+        ]
+        Resource = "*"
+      },
+      # SNS permissions (for alerts)
+      {
+        Effect = "Allow"
+        Action = [
+          "sns:Publish",
+          "sns:Subscribe",
+          "sns:Unsubscribe",
+          "sns:ListTopics",
+          "sns:ListSubscriptions"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "${var.app_name}-management-policy"
+    Environment = var.environment
+  }
+}
+
+# Attach policy to user
+resource "aws_iam_user_policy_attachment" "console_user_policy" {
+  count      = var.create_iam_user ? 1 : 0
+  user       = aws_iam_user.console_user[0].name
+  policy_arn = aws_iam_policy.app_management_policy[0].arn
 }
 
 # Outputs
@@ -1268,12 +1812,6 @@ output "rds_connection_info" {
   sensitive = true
 }
 
-# Outputs for monitoring
-output "cloudwatch_dashboard_url" {
-  description = "URL to the CloudWatch dashboard"
-  value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${aws_cloudwatch_dashboard.main.dashboard_name}"
-}
-
 output "sns_topic_arn" {
   description = "SNS topic ARN for alerts"
   value       = var.alert_email != "" ? aws_sns_topic.alerts[0].arn : "No email provided - alerts disabled"
@@ -1289,8 +1827,71 @@ output "monitoring_info" {
       aws_cloudwatch_metric_alarm.alb_unhealthy_targets.alarm_name,
       aws_cloudwatch_metric_alarm.ecs_cpu_high.alarm_name,
       aws_cloudwatch_metric_alarm.ecs_memory_high.alarm_name,
-      aws_cloudwatch_metric_alarm.ecs_running_tasks_low.alarm_name
+      aws_cloudwatch_metric_alarm.ecs_running_tasks_low.alarm_name,
+      var.alert_email != "" ? aws_cloudwatch_metric_alarm.waf_blocked_requests[0].alarm_name : "WAF alarms disabled",
+      var.alert_email != "" ? aws_cloudwatch_metric_alarm.waf_rate_limit_triggered[0].alarm_name : "WAF alarms disabled"
     ]
     email_alerts = var.alert_email != "" ? "Enabled" : "Disabled (no email provided)"
+    waf_enabled = "Yes"
   }
+}
+
+# Additional outputs for WAF
+output "waf_web_acl_arn" {
+  description = "ARN of the WAF Web ACL"
+  value       = aws_wafv2_web_acl.main.arn
+}
+
+output "waf_monitoring_info" {
+  description = "WAF monitoring information"
+  value = {
+    web_acl_name = aws_wafv2_web_acl.main.name
+    log_group    = aws_cloudwatch_log_group.waf_logs.name
+    cloudwatch_dashboard_url = "https://${var.aws_region}.console.aws.amazon.com/wafv2/homev2/web-acl/${aws_wafv2_web_acl.main.name}/${aws_wafv2_web_acl.main.id}/overview?region=${var.aws_region}"
+  }
+}
+
+# Output the credentials (sensitive)
+output "iam_user_credentials" {
+  description = "IAM user credentials for console and programmatic access"
+  value = var.create_iam_user ? {
+    username    = aws_iam_user.console_user[0].name
+    console_url = "https://${data.aws_caller_identity.current.account_id}.signin.aws.amazon.com/console"
+    access_key  = aws_iam_access_key.console_user_key[0].id
+    secret_key  = aws_iam_access_key.console_user_key[0].secret
+    password    = aws_iam_user_login_profile.console_user_profile[0].password
+  } : null
+  sensitive = true
+}
+
+output "console_login_instructions" {
+  description = "Instructions for console login"
+  value = var.create_iam_user ? format(
+    "1. Go to: https://%s.signin.aws.amazon.com/console\n2. Account ID: %s\n3. Username: %s\n4. Password: (shown in sensitive output - run 'terraform output iam_user_credentials')\n5. You'll be required to change the password on first login\n\nFor programmatic access, use the access key and secret key from the sensitive output.",
+    data.aws_caller_identity.current.account_id,
+    data.aws_caller_identity.current.account_id,
+    aws_iam_user.console_user[0].name
+  ) : "IAM user not created (create_iam_user = false)"
+}
+
+output "admin_user_credentials" {
+  description = "Admin IAM user credentials with full AWS access"
+  value = var.create_admin_user ? {
+    username    = aws_iam_user.admin_user[0].name
+    console_url = "https://${data.aws_caller_identity.current.account_id}.signin.aws.amazon.com/console"
+    access_key  = aws_iam_access_key.admin_user_key[0].id
+    secret_key  = aws_iam_access_key.admin_user_key[0].secret
+    password    = aws_iam_user_login_profile.admin_user_profile[0].password
+  } : null
+  sensitive = true
+}
+
+output "admin_login_instructions" {
+  description = "Instructions for admin console login"
+  value = var.create_admin_user ? format(
+    "ADMIN USER ACCESS:\n1. Go to: https://%s.signin.aws.amazon.com/console\n2. Account ID: %s\n3. Username: %s\n4. Password: (shown in sensitive output - run 'terraform output admin_user_credentials')\n5. You'll be required to change the password on first login\n\nWARNING: This user has FULL administrative access to your AWS account!\n\nFor programmatic access, use the access key and secret key from the sensitive output.",
+    data.aws_caller_identity.current.account_id,
+    data.aws_caller_identity.current.account_id,
+    aws_iam_user.admin_user[0].name
+  ) : "Admin IAM user not created (create_admin_user = false)"
 }
