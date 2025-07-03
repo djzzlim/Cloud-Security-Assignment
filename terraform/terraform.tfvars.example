@@ -1,0 +1,23 @@
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and update the values
+
+# AWS Region where resources will be created
+aws_region = "us-east-1"
+
+# Environment name (will be used in resource naming)
+environment = "production"
+
+# VPC CIDR block
+vpc_cidr = "10.0.0.0/16"
+
+# Email address for security alerts (REQUIRED - update this!)
+alert_email = "your-security-team@example.com"
+
+# Domain name for SSL certificate (optional)
+# If provided, ACM certificate will be created for HTTPS
+# If empty, ALB will use default certificate
+domain_name = ""
+
+# Examples:
+# domain_name = "example.com"
+# domain_name = "app.example.com"

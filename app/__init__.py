@@ -7,8 +7,6 @@ import os
 
 db = SQLAlchemy()
 login_manager = LoginManager()
-DB_NAME = "db.sqlite3"
-
 
 def create_app():
     app = Flask(__name__, static_url_path='/static', static_folder='static')

@@ -1,0 +1,48 @@
+{
+  "Objects": [
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail-Insight/",
+      "VersionId": "5q99vB7tQ4E4I0Xr2f2orB.q8RiUsuoc"
+    },
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail/",
+      "VersionId": "_ewCHA3jnuagF9noueKIR4XDRJwgia_r"
+    },
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail/us-east-1/2025/07/01/931174280450_CloudTrail_us-east-1_20250701T1545Z_ScvW41aldrV0aKpw.json.gz",
+      "VersionId": "XKYZ5bKBdnCVG69So0m1mPMTmt8EZ1e_"
+    },
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail/us-east-1/2025/07/01/931174280450_CloudTrail_us-east-1_20250701T1545Z_gfSfFVvWHBAK0d9f.json.gz",
+      "VersionId": "s0K_PXRjKgJ7tz14txvGgjUqXryeW2pC"
+    },
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail/us-east-1/2025/07/01/931174280450_CloudTrail_us-east-1_20250701T1555Z_6eBJ6lUKEeC3weqA.json.gz",
+      "VersionId": "D32LGYOObXluFIVRZxotFb7yGptlCEIS"
+    },
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail/us-east-1/2025/07/01/931174280450_CloudTrail_us-east-1_20250701T1555Z_DhYzzeztKRDOUMUG.json.gz",
+      "VersionId": "QgvIkDiGDrp1FPLKDWCosFZNect3B49h"
+    },
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail/us-east-1/2025/07/01/931174280450_CloudTrail_us-east-1_20250701T1555Z_ccT0vgcdVlFUJjJG.json.gz",
+      "VersionId": "UhAdLjAU1TIvZOaHwXn8yP5OSQ4HZe0F"
+    },
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail/us-east-1/2025/07/01/931174280450_CloudTrail_us-east-1_20250701T1600Z_TMCc8LGBMDew0yjG.json.gz",
+      "VersionId": "uV.FW3dIT_2_gOh1KWS8FNczgn0OsnNC"
+    },
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail/us-east-1/2025/07/01/931174280450_CloudTrail_us-east-1_20250701T1600Z_TcUil5bAdc9aAAlP.json.gz",
+      "VersionId": "NVye4KeXMHzeKaPJPtmqVpwH_MuLcfY9"
+    },
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail/us-east-1/2025/07/01/931174280450_CloudTrail_us-east-1_20250701T1600Z_pquevUdr5JqV6ZpG.json.gz",
+      "VersionId": "KWi1luaRAr0rFPKb.ogkUClzzybwGdYu"
+    },
+    {
+      "Key": "AWSLogs/931174280450/CloudTrail/us-east-1/2025/07/01/931174280450_CloudTrail_us-east-1_20250701T1605Z_4RL0cypyl1PTxSqt.json.gz",
+      "VersionId": "NFYZoXH15rRBIkRWa38hWlX_j_3sx969"
+    }
+  ]
+}

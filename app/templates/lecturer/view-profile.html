@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container">
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
         <h2><i class="fas fa-user me-2"></i>My Profile</h2>
         <a href="{{ url_for('lecturer.edit_profile') }}" class="btn btn-primary">
             Edit Profile
@@ -33,18 +33,22 @@
                 </div>
                 <div class="card-body">
                     <!-- Profile Photo -->
-                    <div class="text-center mb-4">
-                        {% if expert and expert.photo_url %}
-                            <img src="{{ url_for('static', filename=expert.photo_url) }}" 
-                                 alt="Profile Photo" class="rounded-circle" width="120" height="120"
-                                 style="object-fit: cover; border: 3px solid #e5e7eb;">
-                        {% else %}
-                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto"
-                                 style="width: 120px; height: 120px;">
-                                <i class="fas fa-user fa-3x text-white"></i>
-                            </div>
-                        {% endif %}
-                    </div>
+<div class="text-center mb-4">
+    {% if expert and expert.photo_url %}
+        <img src="{{ expert.photo_url }}"
+             alt="Profile Photo"
+             class="rounded-circle"
+             width="120"
+             height="120"
+             style="object-fit: cover; border: 3px solid #e5e7eb;">
+    {% else %}
+        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto"
+             style="width: 120px; height: 120px;">
+            <i class="fas fa-user fa-3x text-white"></i>
+        </div>
+    {% endif %}
+</div>
+
 
                     <div class="mb-3">
                         <label class="text-muted small">Full Name</label>
@@ -167,14 +171,7 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="text-center mb-4">
-                <a href="{{ url_for('lecturer.edit_profile') }}" class="btn btn-primary me-2">
-                    Edit Profile
-                </a>
-                <a href="{{ url_for('routes.index') }}" class="btn btn-outline-secondary">
-                    Back to Home
-                </a>
-            </div>
+        
         </div>
     </div>
 </div>

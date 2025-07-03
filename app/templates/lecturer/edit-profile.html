@@ -357,6 +357,7 @@
     </div>
 
     <!-- Main Content -->
+
     <main>
         <div class="container">
             <!-- Flash Messages -->
@@ -382,56 +383,58 @@
                     <!-- Profile Photo -->
                     <div class="profile-photo-section">
                         <div class="profile-photo-preview" id="photoPreview">
-                            {% if user_data.photo_url %}
-                            <img src="{{ url_for('static', filename=user_data.photo_url) }}" alt="Profile Photo">
+                            {% if user_data and user_data.photo_url %}
+                            <img src="{{ user_data.photo_url }}" alt="Profile Photo" class="rounded-circle" width="120"
+                                height="120" style="object-fit: cover; border: 3px solid #e5e7eb;">
+
                             {% else %}
                             <i class="fas fa-user photo-placeholder"></i>
                             {% endif %}
                         </div>
-                        <div>
-                            <div class="file-input-wrapper">
-                                <input type="file" id="profilePhoto" name="profile_photo" accept="image/*">
-                                <label for="profilePhoto" class="file-input-label">
-                                    <i class="fas fa-camera me-2"></i>Upload Photo
-                                </label>
-                            </div>
-                            <p class="text-muted small mt-2">Recommended: 300x300px, max 2MB</p>
-                        </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="fullName" class="form-label">Full Name *</label>
-                            <input type="text" class="form-control" id="fullName" name="full_name"
-                                value="{{ user_data.full_name if user_data else '' }}" required>
+                    <div>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="profilePhoto" name="profile_photo" accept="image/*">
+                            <label for="profilePhoto" class="file-input-label">
+                                <i class="fas fa-camera me-2"></i>Upload Photo
+                            </label>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="title" class="form-label">Title</label>
-                            <input type="text" class="form-control" id="title" name="title"
-                                value="{{ user_data.title if user_data else '' }}" placeholder="e.g., Dr., Prof.">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="position" class="form-label">Position</label>
-                            <input type="text" class="form-control" id="position" name="position"
-                                value="{{ user_data.position if user_data else '' }}"
-                                placeholder="e.g., Senior Lecturer">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="faculty" class="form-label">Faculty</label>
-                            <select class="form-select" id="faculty" name="faculty_id">
-                                <option value="">Select Faculty</option>
-                                <option value="1" {{ 'selected' if user_data and user_data.faculty_id=='1' else '' }}>
-                                    Faculty of Engineering (FOE)</option>
-                                <option value="2" {{ 'selected' if user_data and user_data.faculty_id=='2' else '' }}>
-                                    Faculty of Computing & Informatics (FCI)</option>
-                                <option value="3" {{ 'selected' if user_data and user_data.faculty_id=='3' else '' }}>
-                                    Faculty of Creative Multimedia (FCM)</option>
-                                <option value="4" {{ 'selected' if user_data and user_data.faculty_id=='4' else '' }}>
-                                    Faculty of Business (FOB)</option>
-                                <option value="5" {{ 'selected' if user_data and user_data.faculty_id=='5' else '' }}>
-                                    Faculty of Law (FOL)</option>
-                            </select>
-                        </div>
+                        <p class="text-muted small mt-2">Recommended: 300x300px, max 2MB</p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="fullName" class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" id="fullName" name="full_name"
+                            value="{{ user_data.full_name if user_data else '' }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" name="title"
+                            value="{{ user_data.title if user_data else '' }}" placeholder="e.g., Dr., Prof.">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="position" class="form-label">Position</label>
+                        <input type="text" class="form-control" id="position" name="position"
+                            value="{{ user_data.position if user_data else '' }}" placeholder="e.g., Senior Lecturer">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="faculty" class="form-label">Faculty</label>
+                        <select class="form-select" id="faculty" name="faculty_id">
+                            <option value="">Select Faculty</option>
+                            <option value="1" {{ 'selected' if user_data and user_data.faculty_id=='1' else '' }}>
+                                Faculty of Engineering (FOE)</option>
+                            <option value="2" {{ 'selected' if user_data and user_data.faculty_id=='2' else '' }}>
+                                Faculty of Computing & Informatics (FCI)</option>
+                            <option value="3" {{ 'selected' if user_data and user_data.faculty_id=='3' else '' }}>
+                                Faculty of Creative Multimedia (FCM)</option>
+                            <option value="4" {{ 'selected' if user_data and user_data.faculty_id=='4' else '' }}>
+                                Faculty of Business (FOB)</option>
+                            <option value="5" {{ 'selected' if user_data and user_data.faculty_id=='5' else '' }}>
+                                Faculty of Law (FOL)</option>
+                        </select>
                     </div>
                 </div>
 
